@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  vpn_bot_web:
+    container_name: vpn_bot_web
+    build: ./app
+    command: python manage.py runserver 0.0.0.0:8080
+    volumes:
+      - ./app/:/usr/src/app/
+    ports:
+      - 8080:8080
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - vpn_bot_db
+
+  vpn_bot_db:
+    container_name: vpn_bot_db
+    image: postgres:13.0-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=vpn_bot_user
+      - POSTGRES_PASSWORD=vpn_bot_password
+      - POSTGRES_DB=vpn_bot_db
+
+
+  vpn_bot_redis:
+    image: redis:alpine
+    container_name: vpn_bot_redis
+    volumes:
+      - ./redis_data:/data
+  
+  vpn_bot:
+    build:
+      context: ./app
+    container_name: vpn_bot
+    command: python run_pooling.py
+    volumes:
+      - ./app/:/usr/src/app/
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - vpn_bot_web
+      - vpn_bot_redis 
+      - vpn_bot_db
+
+volumes:
+  postgres_data:
