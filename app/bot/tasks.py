@@ -1,7 +1,7 @@
 """
     Celery tasks. Some of them will be launched periodically from admin panel via django-celery-beat
 """
-from wg_vpn_bot.settings import REDIS_URL
+from wg_vpn_bot.settings import REDIS_URL, PROGREV_NAMES
 import redis
 import time
 from typing import Union, List, Optional, Dict
@@ -94,4 +94,15 @@ def send_delay_message(user_id, msg_name):
     )
     User.set_message_id(user_id, prev_msg_id)
 
-
+@app.task(ignore_result=True)
+def check_deep_link(user_id, deep_link):
+    user_ids = list(User.objects.all().values_list('user_id', flat=True))
+    msg_dict = dict(PROGREV_NAMES)
+    if deep_link not in user_ids:
+        User.objects.filter(user_id=user_id).update(deep_link=None)
+        send_delay_message.delay(user_id, msg_name=msg_dict['user_invalid_deep_link'])
+        return False
+    else:
+        send_delay_message.delay(deep_link, msg_name=msg_dict['user_valid_deep_link'])
+        send_delay_message.delay(user_id, msg_name=msg_dict['deep_valid_deep_link'])
+        return True

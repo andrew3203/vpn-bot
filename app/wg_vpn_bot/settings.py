@@ -176,9 +176,14 @@ MSG_PRIMARY_NAMES = [
     ('referral', 'Реферальная программа'),
     ('support', 'Написать в поддержку'),
     ('error', 'Ошибка'), # requaried
-    ('progrev-1', 'Прогрев 1'),
-    ('progrev-2', 'Прогрев 2'),
 ]
+PROGREV_NAMES = [
+    ('progrev_1', 'Прогрев 1'),
+    ('user_valid_deep_link', 'Верня ссылка приграшение')
+    ('deep_valid_deep_link', 'Новый пользователь по ссылке')
+    ('user_invalid_deep_link', 'Неверная ссылка-приглашение')
+]
+MSG_PRIMARY_NAMES.append(PROGREV_NAMES)
 YOO_MSG_NAME= [
     ('payment.succeeded', 'Платеж прошел успешно'),
     ('payment.canceled', 'Платеж отменен'),

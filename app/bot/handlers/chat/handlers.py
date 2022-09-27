@@ -11,31 +11,29 @@ from telegram.ext import CallbackContext
 from bot.models import User, Poll
 from bot.handlers.utils import utils
 from bot.handlers.utils.info import extract_user_data_from_update
-from bot.tasks import send_delay_message
+from bot.tasks import send_delay_message, check_deep_link
+from wg_vpn_bot.settings import PROGREV_NAMES
 
 
 def command_start(update: Update, context: CallbackContext) -> None:
     u, created = User.get_user_and_created(update, context)
-
     if created and u.deep_link:
-            recive_command(update, context)
-            now = timezone.now()
-            utils.send_logs_message(
-                msg_text='Новый пользователь!!', 
-                user_keywords=u.get_keywords(), 
-                prev_state=None
-            )
-            task1 = send_delay_message.apply_async(
-                kwargs={'user_id': u.user_id, 'msg_name': 'Прогрев 1'}, 
-                eta=now+datetime.timedelta(days=1)
-            )
-            task2 = send_delay_message.apply_async(
-                kwargs={'user_id': u.user_id, 'msg_name': 'Прогрев 1'},
-                 eta=now+datetime.timedelta(days=2)
-            )
+        utils.send_logs_message(
+            msg_text='Новый пользователь!!', 
+            user_keywords=u.get_keywords(), 
+            prev_state=None
+        )
+        msg_dict = dict(PROGREV_NAMES)
+        now = timezone.now()
+        send_delay_message.apply_async(
+            kwargs={'user_id': u.user_id, 'msg_name': msg_dict['progrev_1']}, 
+            eta=now+datetime.timedelta(days=1)
+        )
+
+        check_deep_link.delay(user_id=u.user_id,  deep_link=u.deep_link)
+    
+    recive_command(update, context)
             
-    else:
-        recive_command(update, context)
 
 
 def command_balance(update: Update, context: CallbackContext) -> None: # TODO

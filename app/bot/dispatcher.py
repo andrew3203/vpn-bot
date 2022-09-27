@@ -7,10 +7,15 @@ from typing import Dict
 
 import telegram.error
 from wg_vpn_bot.celery import app  # event processing in async mode
-from wg_vpn_bot.settings import DEBUG, TELEGRAM_SUPPORT_CHAT, TELEGRAM_TOKEN
+from wg_vpn_bot.settings import (
+    DEBUG, 
+    TELEGRAM_SUPPORT_CHAT, TELEGRAM_TOKEN, 
+)
 from telegram import Bot, BotCommand, Update
-from telegram.ext import (CallbackQueryHandler, CommandHandler, Dispatcher,
-                          MessageHandler, PollAnswerHandler, Updater)
+from telegram.ext import (
+    CallbackQueryHandler, CommandHandler, Dispatcher,
+    MessageHandler, PollAnswerHandler, Updater
+)
 from telegram.ext.filters import Filters
 
 from bot.handlers.admin import handlers as admin_handlers
