@@ -107,6 +107,8 @@ class User(CreateUpdateTracker):
             self.username: ['username'],
             self.balance: ['balance'],
             self.cashback_balance: ['cashback_balance'],
+            DEEP_CASHBACK_PERCENT * 100: ['DEEP_CASHBACK_PERCENT'],
+            USER_CASHBACK_PERCENT * 100: ['USER_CASHBACK_PERCENT'],
             '': coders
         }
         return keywords

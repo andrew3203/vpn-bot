@@ -45,11 +45,15 @@ INSTALLED_APPS = [
     # 3rd party apps
     'django_celery_beat',
     'debug_toolbar',
+    'django_cleanup.apps.CleanupConfig',
 
     # local apps
     'bot.apps.BotConfig',
+    'payment.apps.PaymentConfig',
+    'proxy.apps.ProxyConfig',
+    'vpn.apps.VPNConfig',
 
-    'django_cleanup.apps.CleanupConfig',
+    
 ]
 
 MIDDLEWARE = [
