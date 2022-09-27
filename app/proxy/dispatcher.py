@@ -1,5 +1,5 @@
 import requests
-from wg_vpn_bot.settings import PROXY_API_KEY
+from abridge_bot.settings import PROXY_API_KEY
 
 
 

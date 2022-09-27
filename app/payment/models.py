@@ -3,7 +3,7 @@ from utils.models import CreateTracker
 from bot.models import User
 import uuid
 from yookassa import Configuration, Payment
-from wg_vpn_bot.settings import (
+from abridge_bot.settings import (
     YOO_ACCAOUNT_ID, YOO_SECRET_KEY, YOO_RETURN_UTL,
     DEEP_CASHBACK_PERCENT, USER_CASHBACK_PERCENT,
     YOO_MSG_NAME

@@ -3,7 +3,7 @@ from typing import Union, Optional, Dict, List
 import telegram
 from telegram import MessageEntity, InlineKeyboardButton, InlineKeyboardMarkup
 
-from wg_vpn_bot.settings import TELEGRAM_TOKEN
+from abridge_bot.settings import TELEGRAM_TOKEN
 from bot.models import User
 
 

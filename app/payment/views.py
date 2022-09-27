@@ -3,7 +3,7 @@ import logging
 from django.views import View
 from django.http import JsonResponse, HttpResponse
 from yookassa.domain.notification import WebhookNotification
-from payments.models import Payment
+from payment.models import Payment
 from bot.tasks import send_delay_message
 
 

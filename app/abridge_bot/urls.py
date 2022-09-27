@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import include, path
-from wg_vpn_bot import settings
+from abridge_bot import settings
 from django.conf.urls.static import static
 
 urlpatterns = [

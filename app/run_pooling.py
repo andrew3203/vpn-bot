@@ -1,6 +1,6 @@
 import os, django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'wg_vpn_bot.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'abridge_bot.settings')
 django.setup()
 
 from bot.dispatcher import run_pooling

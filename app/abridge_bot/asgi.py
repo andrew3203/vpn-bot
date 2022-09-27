@@ -1,5 +1,5 @@
 """
-ASGI config for wg_vpn_bot project.
+ASGI config for abridge_bot project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'wg_vpn_bot.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'abridge_bot.settings')
 
 application = get_asgi_application()

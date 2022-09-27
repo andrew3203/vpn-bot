@@ -1,5 +1,5 @@
 from bot.models import MessageType
-from wg_vpn_bot.settings import TELEGRAM_LOGS_CHAT_ID
+from abridge_bot.settings import TELEGRAM_LOGS_CHAT_ID
 
 from flashtext import KeywordProcessor
 from django.utils import timezone
@@ -126,14 +126,14 @@ def send_message(prev_state, next_state, context, user_id, prev_message_id):
 
 def send_registration(user_id, user_code):
     requests.post(
-        url='https://crm.wg_vpn_bot.ru/api/telegram/sign-up', 
+        url='https://crm.abridge_bot.ru/api/telegram/sign-up', 
         data = {'tg_user_id': user_id, 'bd_user_id': user_code }
     )
 
 
 def get_user_info(user_id, user_code):
     resp = requests.get(
-        url=f'https://crm.wg_vpn_bot.ru/api/telegram/get-user-info?id={user_id}'
+        url=f'https://crm.abridge_bot.ru/api/telegram/get-user-info?id={user_id}'
     )
     return resp.json()
 

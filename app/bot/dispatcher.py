@@ -6,8 +6,8 @@ import sys
 from typing import Dict
 
 import telegram.error
-from wg_vpn_bot.celery import app  # event processing in async mode
-from wg_vpn_bot.settings import (
+from abridge_bot.celery import app  # event processing in async mode
+from abridge_bot.settings import (
     DEBUG, 
     TELEGRAM_SUPPORT_CHAT, TELEGRAM_TOKEN, 
 )
@@ -115,16 +115,18 @@ def set_up_commands(bot_instance: Bot) -> None:
     langs_with_commands: Dict[str, Dict[str, str]] = {
         'en': {
             'start': 'Run bot 🚀',
-            'balance': 'Check my balance 💰',
-            'problem': 'Have a problem ❓',
+            'account': 'My accaunt 👤',
+            'topup': 'Top up my balance 💰',
             'referral': 'Referral program 🎁', 
+            'problem': 'Have a problem ❓',
             'support': 'Text to support 👥',
         },
         'ru': {
             'start': 'Запустить бота 🚀',
-            'balance': 'Проверить мой баланс 💰',
-            'problem': 'У меня вопрос/проблема ❓',
+            'account': 'Личный кабинет 👤',
+            'topup': 'Пополнить баланс 💰',
             'referral': 'Реферальная программа 🎁',
+            'problem': 'У меня вопрос/проблема ❓',
             'support': 'Написать в поддержку 👥',
         }
     }
@@ -141,8 +143,8 @@ def set_up_commands(bot_instance: Bot) -> None:
 
 # WARNING: it's better to comment the line below in DEBUG mode.
 # Likely, you'll get a flood limit control error, when restarting bot too often
-#set_up_commands(bot)
+set_up_commands(bot)
 
-n_workers = 0 if DEBUG else 4
+n_workers = 1 if DEBUG else 4
 dispatcher = setup_dispatcher(Dispatcher(
     bot, update_queue=None, workers=n_workers, use_context=True))

@@ -15,8 +15,8 @@ from django.db.models import QuerySet, Manager
 from telegram import Update
 from telegram.ext import CallbackContext
 
-from wg_vpn_bot.settings import MSG_PRIMARY_NAMES, REDIS_URL
-from wg_vpn_bot.settings import DEEP_CASHBACK_PERCENT, USER_CASHBACK_PERCENT
+from abridge_bot.settings import MSG_PRIMARY_NAMES, REDIS_URL
+from abridge_bot.settings import DEEP_CASHBACK_PERCENT, USER_CASHBACK_PERCENT
 from bot.handlers.utils.info import extract_user_data_from_update
 from utils.models import CreateUpdateTracker, CreateTracker, nb, GetOrNoneManager
 

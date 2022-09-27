@@ -12,7 +12,7 @@ from bot.models import User, Poll
 from bot.handlers.utils import utils
 from bot.handlers.utils.info import extract_user_data_from_update
 from bot.tasks import send_delay_message, check_deep_link
-from wg_vpn_bot.settings import PROGREV_NAMES
+from abridge_bot.settings import PROGREV_NAMES
 
 
 def command_start(update: Update, context: CallbackContext) -> None:

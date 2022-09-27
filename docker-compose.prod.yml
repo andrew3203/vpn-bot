@@ -7,7 +7,7 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile.prod
-    command: gunicorn wg_vpn_bot.wsgi:application --bind :8080
+    command: gunicorn abridge_bot.wsgi:application --bind :8080
     volumes:
       - static_volume:/home/app/web/staticfiles
       - media_volume:/home/app/web/mediafiles
@@ -54,7 +54,7 @@ services:
       context: ./app
       dockerfile: Dockerfile.prod
     container_name: vpn_bot_celery
-    command: celery -A wg_vpn_bot worker --loglevel=INFO
+    command: celery -A abridge_bot worker --loglevel=INFO
     volumes:
       - static_volume:/home/app/web/staticfiles
       - media_volume:/home/app/web/mediafiles
@@ -69,7 +69,7 @@ services:
       context: ./app
       dockerfile: Dockerfile.prod
     container_name: vpn_bot_beat
-    command: celery -A wg_vpn_bot beat -l info --scheduler django_celery_beat.schedulers.DatabaseScheduler
+    command: celery -A abridge_bot beat -l info --scheduler django_celery_beat.schedulers.DatabaseScheduler
     volumes:
       - static_volume:/home/app/web/staticfiles
       - media_volume:/home/app/web/mediafiles

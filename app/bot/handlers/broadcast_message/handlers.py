@@ -11,7 +11,7 @@ from bot.models import User
 from bot.tasks import broadcast_message
 from bot.handlers.broadcast_message.utils import _send_message
 
-from wg_vpn_bot.settings import TELEGRAM_SUPPORT_CHAT
+from abridge_bot.settings import TELEGRAM_SUPPORT_CHAT
 
 
 def broadcast_command_with_message(update: Update, context: CallbackContext):
@@ -97,7 +97,7 @@ def support_command_with_message(update: Update, context: CallbackContext):
         return
 
     u = User.get_user(update, context)
-    li = f'<a href="http://bot.wg_vpn_bot.ru/admin/bot/user/{u.user_id}/change/">{u.first_name} {u.last_name} ({u.user_id})</a>\n{u.company}\n{u.phone}\n{u.owner}'
+    li = f'<a href="http://bot.abridge_bot.ru/admin/bot/user/{u.user_id}/change/">{u.first_name} {u.last_name} ({u.user_id})</a>\n{u.company}\n{u.phone}\n{u.owner}'
     text = f"{update.message.text.replace(f'{support_command} ', '')}\n\n{li}"
     context.bot.send_message(
         chat_id=int(TELEGRAM_SUPPORT_CHAT),

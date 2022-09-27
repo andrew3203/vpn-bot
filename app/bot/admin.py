@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.http import HttpResponseRedirect, HttpResponseServerError
 from django.shortcuts import render
 from bot.models import User
-from wg_vpn_bot.settings import DEBUG
+from abridge_bot.settings import DEBUG
 from bot.handlers.utils import utils
 from django.contrib.auth.models import Group 
 from django.urls import reverse

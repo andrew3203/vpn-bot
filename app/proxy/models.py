@@ -5,7 +5,7 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 import redis
 import json
-from wg_vpn_bot.settings import REDIS_URL
+from abridge_bot.settings import REDIS_URL
 import humanize
 
 from bot.models import User

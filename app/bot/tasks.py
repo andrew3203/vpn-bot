@@ -1,7 +1,7 @@
 """
     Celery tasks. Some of them will be launched periodically from admin panel via django-celery-beat
 """
-from wg_vpn_bot.settings import REDIS_URL, PROGREV_NAMES
+from abridge_bot.settings import REDIS_URL, PROGREV_NAMES
 import redis
 import time
 from typing import Union, List, Optional, Dict
@@ -9,7 +9,7 @@ from typing import Union, List, Optional, Dict
 import telegram
 from bot.handlers.utils import utils
 from bot import models
-from wg_vpn_bot.celery import app
+from abridge_bot.celery import app
 from celery.utils.log import get_task_logger
 from bot.handlers.broadcast_message.utils import _send_message, _from_celery_entities_to_entities, \
     _from_celery_markup_to_markup

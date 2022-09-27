@@ -6,7 +6,7 @@ import telegram
 from telegram import Update
 from telegram.ext import CallbackContext
 
-from wg_vpn_bot.settings import TELEGRAM_LOGS_CHAT_ID
+from abridge_bot.settings import TELEGRAM_LOGS_CHAT_ID
 from bot.models import User
 
 

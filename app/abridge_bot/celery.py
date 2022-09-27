@@ -2,9 +2,9 @@ import os
 from celery import Celery
 
 # set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'wg_vpn_bot.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'abridge_bot.settings')
 
-app = Celery('wg_vpn_bot')
+app = Celery('abridge_bot')
 
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.

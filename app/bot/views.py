@@ -3,7 +3,7 @@ import logging
 from django.views import View
 from django.http import JsonResponse
 
-from wg_vpn_bot.settings import DEBUG
+from abridge_bot.settings import DEBUG
 from bot.dispatcher import process_telegram_event
 
 logger = logging.getLogger(__name__)
