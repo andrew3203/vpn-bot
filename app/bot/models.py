@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ast import keyword
 from random import randint
 import cyrtranslit
 import emoji
@@ -15,6 +16,7 @@ from telegram import Update
 from telegram.ext import CallbackContext
 
 from wg_vpn_bot.settings import MSG_PRIMARY_NAMES, REDIS_URL
+from wg_vpn_bot.settings import DEEP_CASHBACK_PERCENT, USER_CASHBACK_PERCENT
 from bot.handlers.utils.info import extract_user_data_from_update
 from utils.models import CreateUpdateTracker, CreateTracker, nb, GetOrNoneManager
 
@@ -63,6 +65,14 @@ class User(CreateUpdateTracker):
         'Админ',
         default=False
     )
+    balance = models.FloatField(
+        'Баланс',
+        default=0
+    )
+    cashback_balance = models.FloatField(
+        'Кешбек',
+        default=0
+    )
 
     objects = GetOrNoneManager()  # user = User.objects.get_or_none(user_id=<some_id>)
     admins = AdminUserManager()  # User.admins.all()
@@ -75,31 +85,39 @@ class User(CreateUpdateTracker):
     def __str__(self):
         return f'@{self.username}' if self.username is not None else f'{self.user_id}'
 
-   
-
     def get_keywords(self):
-    
-        t = []
+        coders = []
         if self.first_name is None:
-            t.append('first_name')
+            coders.append('first_name')
         if self.last_name is None:
-            t.append('last_name')
+            coders.append('last_name')
         if self.username is None:
-            t.append('username')
+            coders.append('username')
 
-        d =  {
+        deep_user = ''
+        if self.deep_link:
+            deep_user = User.objects.get(user_id=self.deep_link).to_str()
+        else:
+            coders.append('deep_user')
+        keywords =  {
             self.user_id: ['user_id'],
-            self.deep_link if self.deep_link  else 'Нет': ['user_code'],
+            deep_user: ['deep_user'],
             self.last_name: ['last_name'],
             self.first_name: ['first_name'],
             self.username: ['username'],
-            '': t
+            self.balance: ['balance'],
+            self.cashback_balance: ['cashback_balance'],
+            '': coders
         }
-        return d
+        return keywords
+    
+    def to_str(self):
+        name = self.first_name or f'@{self.username}' or self.last_name or f'{self.user_id}'
+        return f'{name}'
 
     def update_info(self, new_data):
         pass
-
+    
     def set_keywords(self):
         r = redis.from_url(REDIS_URL)
         r.set(

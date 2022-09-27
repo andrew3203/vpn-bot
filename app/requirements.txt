@@ -30,3 +30,7 @@ flashtext
 # Server
 gunicorn==20.1.0
 
+yookassa
+uuid
+humanize
+

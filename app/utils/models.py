@@ -7,7 +7,7 @@ nb = dict(null=True, blank=True)
 
 class CreateTracker(models.Model):
     created_at = models.DateTimeField(
-        'Дата регистрации',
+        'Дата создания',
         auto_now_add=True, db_index=True
     )
 
@@ -18,7 +18,7 @@ class CreateTracker(models.Model):
 
 class CreateUpdateTracker(CreateTracker):
     updated_at = models.DateTimeField(
-        'Дата последней активности',
+        'Дата последнего изменения',
         auto_now=True
     )
 
@@ -33,3 +33,4 @@ class GetOrNoneManager(models.Manager):
             return self.get(**kwargs)
         except ObjectDoesNotExist:
             return None
+

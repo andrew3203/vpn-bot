@@ -149,7 +149,7 @@ MEDIA_ROOT = BASE_DIR / "mediafiles"
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
-# -----> CELERY
+# CELERY
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://redis:6379')
 BROKER_URL = REDIS_URL
 CELERY_BROKER_URL = REDIS_URL
@@ -163,25 +163,40 @@ CELERY_TASK_DEFAULT_QUEUE = 'default'
 DEFAULT_AUTO_FIELD='django.db.models.AutoField' 
 
 
-# -----> TELEGRAM
+# TELEGRAM
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-if TELEGRAM_TOKEN is None:
-    logging.error(
-        "Please provide TELEGRAM_TOKEN in .env file.\n"
-        "Example of .env file: https://github.com/ohld/django-telegram-bot/blob/main/.env_example"
-    )
-    sys.exit(1)
+TELEGRAM_LOGS_CHAT_ID = os.environ.get("TELEGRAM_LOGS_CHAT_ID")
+TELEGRAM_SUPPORT_CHAT = os.environ.get("TELEGRAM_SUPPORT_CHAT")
 
-TELEGRAM_LOGS_CHAT_ID = os.environ.get("TELEGRAM_LOGS_CHAT_ID", default=None)
-TELEGRAM_SUPPORT_CHAT = os.environ.get("TELEGRAM_SUPPORT_CHAT", default=None)
-
+# Base message names
 MSG_PRIMARY_NAMES = [
-    ('start', 'Старт'),
+    ('start', 'Старт'), # requaried
     ('balance', 'Мой баланс'),
     ('problem', 'У меня вопрос/проблема'),
     ('referral', 'Реферальная программа'),
     ('support', 'Написать в поддержку'),
-    ('error', 'Ошибка'),
+    ('error', 'Ошибка'), # requaried
     ('progrev-1', 'Прогрев 1'),
     ('progrev-2', 'Прогрев 2'),
 ]
+YOO_MSG_NAME= [
+    ('payment.succeeded', 'Платеж прошел успешно'),
+    ('payment.canceled', 'Платеж отменен'),
+    ('refund.succeeded', 'Платеж возвращен'),
+    ('payment_error', 'Ошибка платежа'),
+    ('deep_cashback', 'Бонусный кешбек'),
+    ('user_cashback', 'Бонусный процент')
+]
+MSG_PRIMARY_NAMES.append(YOO_MSG_NAME)
+
+DEEP_CASHBACK_PERCENT = 0.05 # bonus cashback for invitor
+USER_CASHBACK_PERCENT = 0.10 # bonus cashback for invited user
+
+
+# Proxy API
+PROXY_API_KEY = os.environ.get("PROXY_API_KEY")
+
+# Yookassa Api
+YOO_ACCAOUNT_ID = os.environ.get("YOO_ACCAOUNT_ID")
+YOO_SECRET_KEY = os.environ.get("YOO_SECRET_KEY")
+YOO_RETURN_UTL = ''
