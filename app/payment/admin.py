@@ -6,7 +6,6 @@ class PaymentAdmin(admin.ModelAdmin):
     list_display = ['user', 'price', 'paid', 'created_at']
     search_fields = ('user',)
     list_filter = ["price", 'paid', 'refounded', 'canceled']
-    readonly_fields = ('created_at','updated_at')
     fieldsets = (
         ('Основное', {
             'fields': (
@@ -19,9 +18,9 @@ class PaymentAdmin(admin.ModelAdmin):
         ('Важные даты', {
             'fields': (
                 ("created_at"),
-                ('updated_at',),
             ),
         })
     )
+    readonly_fields = ('created_at',)
     
 

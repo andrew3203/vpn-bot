@@ -1,3 +1,4 @@
+from curses.ascii import US
 from django.contrib import admin
 from django.http import HttpResponseRedirect, HttpResponseServerError
 from django.shortcuts import render
@@ -36,8 +37,8 @@ admin.site.site_title = 'Admin'
 @admin.register(models.User)
 class UserAdmin(admin.ModelAdmin):
     list_display = [
-        'user_id', 'first_name', 'last_name', 'deep_link',
-        'created_at', 'updated_at',
+        'user_id', 'first_name', 'last_name', 'balance', 'cashback_balance',
+        'deep_link', 'created_at', 'updated_at',
     ]
     list_filter = ["is_blocked_bot", 'is_admin']
     search_fields = ('username', 'user_id')
@@ -45,12 +46,14 @@ class UserAdmin(admin.ModelAdmin):
         ('Основное', {
             'fields': (
                 ("user_id",),
+                ('deep_link',),
                 ('username', 'language_code'),
                 ('first_name', 'last_name'),
             ),
         }),
         ('Дополнительная информация', {
             'fields': (
+                ('balance', 'cashback_balance'),
                 ("is_blocked_bot",),
                 ('is_admin',),
             ),
@@ -65,10 +68,6 @@ class UserAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
 
     def broadcast(self, request, queryset):
-        # TODO: check the function
-        """ Select users via check mark in django-admin panel, then select "Broadcast" to send message"""
-        user_ids = queryset.values_list('user_id', flat=True).distinct().iterator()
-
         if 'apply' in request.POST:
             f = forms.BroadcastForm(request.POST, request.FILES)
             if f.is_valid(): 
@@ -76,42 +75,43 @@ class UserAdmin(admin.ModelAdmin):
             else:
                 return HttpResponseServerError()
             
-            if DEBUG:  
-                self.message_user(request, f"Рассылка {len(queryset)} сообщений начата")
-                for user in queryset:
-                    user_id = user.user_id
-                    persone_code = user.deep_link
-                    next_state, prev_message_id = models.User.get_broadcast_next_states(user_id, broadcast.message.id, persone_code)
-                    prev_msg_id = utils.send_broadcast_message(
-                        next_state=next_state,
-                        user_id=user_id,
-                        prev_message_id=prev_message_id
-                    ) 
-                    User.set_message_id(user_id, prev_msg_id)
-
-            else:
-
-                self.message_user(request, f"Рассылка {len(queryset)} сообщений начата")
-                user_ids = list(queryset.values_list('user_id', flat=True))
-                persone_codes = list(queryset.values_list('deep_link', flat=True))
-                users = list(zip(user_ids,persone_codes))
-                broadcast_message2.delay(text=broadcast.message.text, users=users, message_id=broadcast.message.id) # TODO
+            self.message_user(request, f"Рассылка {len(queryset)} сообщений начата")
+            user_ids = list(queryset.values_list('user_id', flat=True))
+            broadcast_message2.delay(users=user_ids, message_id=broadcast.message.id)
                 
             url = reverse(f'admin:{broadcast._meta.app_label}_{broadcast._meta.model_name}_changelist')
             return HttpResponseRedirect(url)
         else:
             user_ids = queryset.values_list('user_id', flat=True)
             form = forms.BroadcastForm(initial={'_selected_action': user_ids, 'users': user_ids})
-            return render(
-                request, "admin/broadcast_message.html", {
-                    'form': form, 
-                    'title': u'Создание рассылки сообщений'
-                }
-            )
+            context = {'form': form, 'title': u'Создание рассылки'}
+            return render(request, "admin/broadcast_message.html", context)
 
+    def all_broadcast(self, request, queryset):
+        if 'apply' in request.POST:
+            f = forms.BroadcastForm(request.POST, request.FILES)
+            if f.is_valid(): 
+                broadcast = f.save() 
+            else:
+                return HttpResponseServerError()
+            
+            users_queryset = User.objects.filter(is_blocked_bot=False)
+            self.message_user(request, f"Рассылка {len(users_queryset)} сообщений начата")
+            user_ids = list(users_queryset.values_list('user_id', flat=True))
+            broadcast_message2.delay(users=user_ids, message_id=broadcast.message.id)
+                
+            url = reverse(f'admin:{broadcast._meta.app_label}_{broadcast._meta.model_name}_changelist')
+            return HttpResponseRedirect(url)
+        else:
+            user_ids = queryset.values_list('user_id', flat=True)
+            form = forms.BroadcastForm(initial={'_selected_action': user_ids, 'users': user_ids})
+            context = {'form': form, 'title': u'Создание рассылки'}
+            return render(request, "admin/broadcast_message.html", context)
+    
    
-    actions = [broadcast]
+    actions = [broadcast, all_broadcast]
     broadcast.short_description = 'Создать рассылку'
+    all_broadcast.short_description = 'Создать рассылку для всех'
 
 
 @admin.register(models.Message)
@@ -182,11 +182,11 @@ class BroadcastAdmin(admin.ModelAdmin):
 
     def send_mailing(self, request, queryset):
         self.message_user(request, f"Рассылка {len(queryset)} сообщений начата!")
+        users = []
         for broadast in queryset:
-            user_ids = list(queryset.values_list('user_id', flat=True))
-            persone_codes = list(queryset.values_list('deep_link', flat=True))
-            users = list(zip(user_ids,persone_codes))
-            broadcast_message2.delay(text=broadast.message.text, users=users, message_id=broadast.message.id)
+            users += list(broadast.users.all().values_list('user_id', flat=True))
+
+        broadcast_message2.delay(users=users, message_id=broadast.message.id)
 
     actions = [send_mailing]
     send_mailing.short_description = 'Начать рассылку'

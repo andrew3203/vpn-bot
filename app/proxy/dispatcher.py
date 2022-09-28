@@ -45,7 +45,7 @@ class ProxyConnector(object):
         return self.__return_data(url)
     
     
-    def get_count(self, country: str = '', version: int = '') -> dict:
+    def get_count(self, country: str, version: int) -> dict:
         url = self.__get_url(
             method='getcount', 
             country=country, version=version
@@ -85,10 +85,14 @@ class ProxyConnector(object):
         return self.__return_data(url)
     
 
-    def buy(self, count: int, period: int, country: str, type: str = 'socks', auto_prolong: bool = False, descr: str = '') -> dict:
+    def buy(self, 
+            count: int, period: int, country: str, version: str,
+            type: str = 'socks', auto_prolong: bool = False, 
+            descr: str = ''
+        ) -> dict:
         url = self.__get_url(
             method='buy', 
-            count=count, period=period, 
+            count=count, period=period, version=version,
             country=country, type=type, auto_prolong=auto_prolong, 
             descr=descr
         )
@@ -97,14 +101,14 @@ class ProxyConnector(object):
     def prolong(self, period: int, ids: str) -> dict:
         url = self.__get_url(
             method='prolong', 
-            ids=ids, period=period
+            period=period, ids=ids
         )
         return self.__return_data(url)
     
     
-    def deleted(self, ids: str, descr: str = '') -> dict:
+    def delete(self, ids: str, descr: str = '') -> dict:
         url = self.__get_url(
-            method='deleted', 
+            method='delete', 
             ids=ids, descr=descr
         )
         return self.__return_data(url)
@@ -119,4 +123,5 @@ class ProxyConnector(object):
 
         
         
+     
 proxy_connector = ProxyConnector(PROXY_API_KEY)

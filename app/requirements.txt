@@ -30,6 +30,7 @@ flashtext
 # Server
 gunicorn==20.1.0
 
+# Yoo Payments
 yookassa
 uuid
 humanize

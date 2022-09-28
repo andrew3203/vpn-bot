@@ -142,6 +142,13 @@ class User(CreateUpdateTracker):
         if message_id:
             r = redis.from_url(REDIS_URL)
             r.set(f'{user_id}_prev_message_id', value=message_id)
+    
+    @staticmethod
+    def unset_prew_message_id(user_id):
+        r = redis.from_url(REDIS_URL,  decode_responses=True)
+        message_id = r.get(f'{user_id}_prev_message_id')
+        r.delete(f'{user_id}_prev_message_id')
+        return message_id
 
     @staticmethod
     def get_prev_next_states(user_id, msg_text_key):
@@ -156,13 +163,12 @@ class User(CreateUpdateTracker):
         else:
             prev_state = None
             next_state_id = r.get('start')
-
         
         Message.objects.filter(id=next_state_id).update(clicks=F('clicks') + 1)
 
         raw = r.get(next_state_id)
         next_state = json.loads(raw)
-        next_state['user_keywords'] = json.loads(r.get(f'{user_id}_keywords'))
+        next_state['user_keywords'] = User._load_keywords(r, user_id)
         r.setex(user_id, timedelta(hours=35), value=next_state_id)
 
         prev_message_id = r.get(f'{user_id}_prev_message_id')
@@ -170,13 +176,26 @@ class User(CreateUpdateTracker):
         return prev_state, next_state, prev_message_id
     
     @staticmethod
-    def get_broadcast_next_states(user_id, message_id, persone_code):
+    def _load_keywords(r, user_id):
+        user_keywords = json.loads(r.get(f'{user_id}_keywords'))
+
+        vpn_keywords = r.get(f'{user_id}_vpn_keywords')
+        vpn_keywords = json.loads(vpn_keywords) if vpn_keywords else {}
+
+        proxy_keywords = r.get(f'{user_id}_proxy_keywords')
+        proxy_keywords = json.loads(proxy_keywords) if proxy_keywords else {}
+        keywords = {**user_keywords, **vpn_keywords, **proxy_keywords}
+        return keywords
+        
+    
+    @staticmethod
+    def get_broadcast_next_states(user_id, message_id):
         r = redis.from_url(REDIS_URL, decode_responses=True)
 
         next_state = json.loads(r.get(message_id))
         next_state_id = message_id
 
-        next_state['user_keywords'] = json.loads(r.get(f'{user_id}_keywords'))
+        next_state['user_keywords'] = User._load_keywords(r, user_id)
         r.setex(user_id, timedelta(hours=35), value=next_state_id)
 
         prev_message_id = r.get(f'{user_id}_prev_message_id')

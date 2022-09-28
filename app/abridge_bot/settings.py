@@ -185,9 +185,9 @@ MSG_PRIMARY_NAMES = [
 ]
 PROGREV_NAMES = [
     ('progrev_1', 'Прогрев 1'),
-    ('user_valid_deep_link', 'Верня ссылка приграшение')
-    ('deep_valid_deep_link', 'Новый пользователь по ссылке')
-    ('user_invalid_deep_link', 'Неверная ссылка-приглашение')
+    ('user_valid_deep_link', 'Верня ссылка приграшение'),
+    ('deep_valid_deep_link', 'Новый пользователь по ссылке'),
+    ('user_invalid_deep_link', 'Неверная ссылка-приглашение'),
 ]
 YOO_MSG_NAME= [
     ('payment.succeeded', 'Платеж прошел успешно'),
@@ -195,15 +195,16 @@ YOO_MSG_NAME= [
     ('refund.succeeded', 'Платеж возвращен'),
     ('payment_error', 'Ошибка платежа'),
     ('deep_cashback', 'Бонусный кешбек'),
-    ('user_cashback', 'Бонусный процент')
+    ('user_cashback', 'Бонусный процент'),
 ]
 MSG_PRIMARY_NAMES.append(PROGREV_NAMES)
 MSG_PRIMARY_NAMES.append(YOO_MSG_NAME)
 
 
-# PAYMENT CASHBACK
+# PAYMENT SETTINGS
 DEEP_CASHBACK_PERCENT = 0.05 # bonus cashback for invitor
 USER_CASHBACK_PERCENT = 0.10 # bonus cashback for invited user
+AVAILABLE_TOPUPS = [100, 200, 500, 1000, 5000]
 
 
 # PROXY API
@@ -213,4 +214,4 @@ PROXY_API_KEY = os.environ.get("PROXY_API_KEY")
 # YOOKASSA API
 YOO_ACCAOUNT_ID = os.environ.get("YOO_ACCAOUNT_ID")
 YOO_SECRET_KEY = os.environ.get("YOO_SECRET_KEY")
-YOO_RETURN_UTL = ''
+YOO_RETURN_UTL = os.environ.get("YOO_RETURN_UTL", default='https://bridge-vpn.store')

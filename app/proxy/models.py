@@ -56,7 +56,8 @@ class Proxy(CreateUpdateTracker):
             time_left =  humanize.precisedelta(self.date_end - now)
         else:
             time_left =  humanize.naturaltime(self.date_end - now)
-        keywords =  {
+        keywords = {}
+        keywords[self.proxy_id] =  {
             self.proxy_id: ['proxy_id'],
             self.proxy: ['proxy'],
             self.date_end: ['date_end'],
@@ -67,27 +68,18 @@ class Proxy(CreateUpdateTracker):
         }
         return keywords
 
-    def update_info(self, new_data):
-        pass
-
     def set_keywords(self):
-        r = redis.from_url(REDIS_URL)
-        r.set(
-            f'{self.user_id}_keywords', 
-            value=json.dumps(self.get_keywords(), ensure_ascii=False)
-        )
-    
-    def make_cash(self):
-        cash = {}
-        cash[f'proxy_{self.proxy_id}'] = {
-            'proxy_id': self.proxy_id,
-            'proxy': self.proxy,
-            'date_end': self.date_end,
-            'version': self.version,
-            'country': self.country,
-            'user_id': self.user.user_id
-        }
-        return cash
+        r = redis.from_url(REDIS_URL, decode_responses=True)
+        key = f'{self.user.user_id}_proxy_keywords'
+        proxy_keywords = r.get(key)
+        if proxy_keywords:
+            proxy_keywords = json.loads(proxy_keywords)
+        else:
+            proxy_keywords = []
+        
+        proxy_keywords.append(self.get_keywords())
+        r.set(key, value=json.dumps(proxy_keywords, ensure_ascii=False))
+
 
     @staticmethod
     def make_cashes():
@@ -97,14 +89,16 @@ class Proxy(CreateUpdateTracker):
         return cash
     
 
+def balance_check():
+    pass
+    
+
 @receiver(post_save, sender=Proxy)
 def set_proxy_cash(sender, instance, **kwargs):
-    r = redis.from_url(REDIS_URL)
-    cash = instance.make_cash() 
-    r.mset(cash)
+    instance.set_keywords() 
 
 
 @receiver(post_delete, sender=Proxy)
 def del_proxy_cash(sender, instance, **kwargs):
     r = redis.from_url(REDIS_URL)
-    r.delete(f'proxy_{instance.proxy_id}') 
+    r.delete(f'{instance.user.user_id}_proxy_keywords') 
