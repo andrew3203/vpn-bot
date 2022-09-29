@@ -1,5 +1,4 @@
 from __future__ import annotations
-from ast import keyword
 from random import randint
 import cyrtranslit
 import emoji

@@ -17,7 +17,7 @@ class Proxy(CreateUpdateTracker):
     user = models.ForeignKey(
         User,
         verbose_name='Владалец',
-        on_delete=models.SET_NULL, null=True
+        on_delete=models.CASCADE,
     )
     proxy_id = models.PositiveBigIntegerField(
         'Прокси id',

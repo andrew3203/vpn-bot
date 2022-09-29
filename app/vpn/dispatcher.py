@@ -5,8 +5,8 @@ import subprocess
 
 class VPNConnector(object):
     
-    def __init__(self, secret: str, ip: str, port: str, protocol: str = 'http') -> None:
-        self.base_url = f'{protocol}://{ip}:{port}/v1' + '{method}'
+    def __init__(self, secret: str, link: str) -> None:
+        self.base_url = f'{link}/v1' + '{method}'
         self.headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {secret}'
