@@ -33,21 +33,13 @@ def setup_dispatcher(dp):
     """
     # onboarding
     dp.add_handler(CommandHandler("start", chat.command_start))
-    dp.add_handler(CommandHandler("balance", chat.command_balance))
+    dp.add_handler(CommandHandler("account", chat.command_account))
     
-
     # admin commands
     dp.add_handler(CommandHandler("admin", admin_handlers.admin))
     dp.add_handler(CommandHandler("stats", admin_handlers.stats))
     dp.add_handler(CommandHandler('export_users',admin_handlers.export_users))
     
-    # broadcast message
-    dp.add_handler(MessageHandler(
-        Filters.regex(rf'^{broadcast_command}(/s)?.*') | Filters.caption_entity(f'{broadcast_command}'),
-        broadcast_handlers.broadcast_command_with_message)
-    )
-    dp.add_handler(CallbackQueryHandler(broadcast_handlers.broadcast_decision_handler, pattern=f"^{CONFIRM_DECLINE_BROADCAST}"))
-
     # forward user question to support chat
     dp.add_handler(MessageHandler(
         Filters.regex(rf'^{support_command}(/s)?.*') | Filters.caption_entity(f'{support_command}'), 
@@ -65,9 +57,6 @@ def setup_dispatcher(dp):
 
     # recive all pools
     dp.add_handler(PollAnswerHandler(chat.receive_poll_answer))
-
-    # files for admins
-    dp.add_handler(MessageHandler(Filters.photo, files.show_file_id))
 
     # forward answers from admin support chat to user
     dp.add_handler(MessageHandler(Filters.chat(chat_id=int(TELEGRAM_SUPPORT_CHAT)), chat.forward_from_support))

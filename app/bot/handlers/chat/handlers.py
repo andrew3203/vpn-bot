@@ -9,6 +9,7 @@ from telegram import ParseMode, Update
 from telegram.ext import CallbackContext
 
 from bot.models import User, Poll
+from proxy.models import Proxy
 from bot.handlers.utils import utils
 from bot.handlers.utils.info import extract_user_data_from_update
 from bot.tasks import send_delay_message, check_deep_link
@@ -36,10 +37,10 @@ def command_start(update: Update, context: CallbackContext) -> None:
             
 
 
-def command_balance(update: Update, context: CallbackContext) -> None: # TODO
+def command_account(update: Update, context: CallbackContext) -> None: # TODO
     u, _ = User.get_user_and_created(update, context)
-    user_balance = utils.get_user_info(u.user_id, u.deep_link)
-    u.update_info(user_balance)
+    update_proxy_info = Proxy.update_info(u.user_id)
+    u.update_info(update_proxy_info)
 
     recive_command(update, context)
 

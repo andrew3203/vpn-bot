@@ -211,6 +211,12 @@ AVAILABLE_TOPUPS = [100, 200, 500, 1000, 5000]
 PROXY_API_KEY = os.environ.get("PROXY_API_KEY")
 
 
+# VPN API
+VPN_AUTH_NAME = os.environ.get("VPN_AUTH_NAME")
+VPN_AUTH_PASSWORD = os.environ.get("VPN_AUTH_PASSWORD")
+VPN_AUTH_TOKEN = os.environ.get("VPN_AUTH_TOKEN")
+
+
 # YOOKASSA API
 YOO_ACCAOUNT_ID = os.environ.get("YOO_ACCAOUNT_ID")
 YOO_SECRET_KEY = os.environ.get("YOO_SECRET_KEY")

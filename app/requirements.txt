@@ -35,3 +35,6 @@ yookassa
 uuid
 humanize
 
+# VPN
+qrcode
+pyswagger
