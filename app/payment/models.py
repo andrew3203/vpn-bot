@@ -6,7 +6,7 @@ from yookassa import Configuration, Payment
 from abridge_bot.settings import (
     YOO_ACCAOUNT_ID, YOO_SECRET_KEY, YOO_RETURN_UTL,
     DEEP_CASHBACK_PERCENT, USER_CASHBACK_PERCENT,
-    YOO_MSG_NAME
+    YOO_MSG_NAMES
 )
 from bot.tasks import send_delay_message
 
@@ -85,7 +85,7 @@ class Payment(CreateTracker):
                 deep_user.balance += self.price * DEEP_CASHBACK_PERCENT
                 deep_user.cashback_balance +=  self.price * DEEP_CASHBACK_PERCENT
                 deep_user.save()
-                msg_dict = dict(YOO_MSG_NAME)
+                msg_dict = dict(YOO_MSG_NAMES)
                 send_delay_message.delay(deep_user.user_id, msg_dict['deep_cashback'])
 
                 self.user.balance += self.price * USER_CASHBACK_PERCENT
@@ -112,7 +112,7 @@ class Payment(CreateTracker):
     @staticmethod
     def yoo_process_event(yoo_payment_id, event):
         payment = Payment.objects.get(notes=yoo_payment_id)
-        msg_code = dict(YOO_MSG_NAME)
+        msg_code = dict(YOO_MSG_NAMES)
         if event == 'payment.succeeded':
             payment.sucsess()
             msg_name = msg_code[event]

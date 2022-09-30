@@ -8,7 +8,7 @@ import redis
 import json
 from abridge_bot.settings import REDIS_URL
 import humanize
-from .dispatcher import proxy_connector
+from proxy.dispatcher import proxy_connector
 
 from bot.models import User
 
@@ -16,7 +16,7 @@ from bot.models import User
 class Proxy(CreateUpdateTracker):
     user = models.ForeignKey(
         User,
-        verbose_name='Владалец',
+        verbose_name='Владелец',
         on_delete=models.CASCADE,
     )
     proxy_id = models.PositiveBigIntegerField(
