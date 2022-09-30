@@ -1,10 +1,11 @@
-from http import server
+from abridge_bot.settings import VPN_MSG_NAMES
 from django.db import models
 from bot.models import User
 from utils.models import CreateTracker
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
-from .dispatcher import VPNConnector
+from vpn.dispatcher import VPNConnector
+
 
 # поменяться местами 
 class VpnServer(models.Model):
@@ -49,7 +50,7 @@ class VpnServer(models.Model):
         res = vpn_connector.delete_peer(public_key)
         return res
     
-    def update_traffic(self,):
+    def update_traffic(self):
         vpn_connector = VPNConnector(self.secret, self.link)
         server_traffic = 0
         for peer in Peer.objects.filter(server=self):
@@ -138,6 +139,10 @@ class Order(CreateTracker):
         Peer,
         verbose_name='Подключения',
     )
+    active = models.BooleanField(
+        'Активный',
+        default=True
+    )
     class Meta:
         verbose_name = 'Заказ'
         verbose_name_plural = 'Заказы'
@@ -146,18 +151,19 @@ class Order(CreateTracker):
     def __str__(self):
         return f'{self.user} - {self.tariff}'
     
-    def check_traffic(self):
+    def check_traffic(self) -> str:
         traffic = 0
-        for peer in self.peers.all():
-            traffic += peer.tariff
+        msg_dict = dict(VPN_MSG_NAMES)
+        traffic = sum(list(self.peers.all().values_list('tariff', flat=True)))
         
-        if round(self.tariff.traffic_lim - traffic, 4)  <= 0.5000:
-            return 0
+        if round(self.tariff.traffic_lim - traffic, 4) <= 0.5000:
+            return msg_dict['traffic_05']
         elif round(self.tariff.traffic_lim - traffic, 4) < 0.0001:
-            self.delete()
-            return -1
+            self.active = False
+            self.save()
+            return msg_dict['traffic_0']
 
-        return 1
+        return None
 
     @staticmethod
     def create_order(user_id: int, tariff_id: int, country: str):
@@ -197,10 +203,11 @@ class Order(CreateTracker):
 
 
 
-@receiver(post_delete, sender=Order)
+@receiver(post_save, sender=Order)
 def remove_user_states(sender, instance, **kwargs):
-    for peer in instance.peers.all():
-        peer.delete()
+    if instance.active == False:
+        for peer in instance.peers.all():
+            peer.delete()
 
 
 @receiver(post_delete, sender=Peer)

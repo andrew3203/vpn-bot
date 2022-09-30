@@ -189,7 +189,7 @@ PROGREV_NAMES = [
     ('deep_valid_deep_link', 'Новый пользователь по ссылке'),
     ('user_invalid_deep_link', 'Неверная ссылка-приглашение'),
 ]
-YOO_MSG_NAME= [
+YOO_MSG_NAMES = [
     ('payment.succeeded', 'Платеж прошел успешно'),
     ('payment.canceled', 'Платеж отменен'),
     ('refund.succeeded', 'Платеж возвращен'),
@@ -197,8 +197,13 @@ YOO_MSG_NAME= [
     ('deep_cashback', 'Бонусный кешбек'),
     ('user_cashback', 'Бонусный процент'),
 ]
+VPN_MSG_NAMES = [
+    ('traffic_05', 'У вас осталось меньше 0.5 ГБ'),
+    ('traffic_0', 'У вас закончисля трафик'),
+]
 MSG_PRIMARY_NAMES.append(PROGREV_NAMES)
-MSG_PRIMARY_NAMES.append(YOO_MSG_NAME)
+MSG_PRIMARY_NAMES.append(YOO_MSG_NAMES)
+MSG_PRIMARY_NAMES.append(VPN_MSG_NAMES)
 
 
 # PAYMENT SETTINGS

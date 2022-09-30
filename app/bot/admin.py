@@ -15,7 +15,6 @@ from django_celery_beat.models import (
     CrontabSchedule,
     SolarSchedule,
     ClockedSchedule,
-    PeriodicTask,
 )
 
 
@@ -23,7 +22,6 @@ from django_celery_beat.models import (
 
 admin.site.unregister(SolarSchedule)
 admin.site.unregister(ClockedSchedule)
-admin.site.unregister(PeriodicTask)
 admin.site.unregister(IntervalSchedule)
 admin.site.unregister(CrontabSchedule)
 
