@@ -185,7 +185,7 @@ class User(CreateUpdateTracker):
 
         elif vpn_status == 'test':
             vpn_kw = r.get(f'{user_id}_test_vpn_keywords')
-            
+
         else:
             # user did not use vpn befor
             vpn_kw = r.get(f'default_vpn_keywords')
@@ -331,9 +331,15 @@ class Message(CreateUpdateTracker):
         verbose_name='Картинки, Видео, Файлы'
     )
     need_routing = models.BooleanField(
-        'Раутинг',
-        help_text='Нужно ли искать сообщения, соответсвующие кнопкам',
-        default=True
+        'Роутинг',
+        help_text='Нужно ли искать сообщения, соответсвующие кнопкам. Используеться для создания интерактивных маршрутов.',
+        default=True, blank=True
+    )
+    message_code = models.CharField(
+        'Код сообщения',
+        max_length=80,
+        help_text='Если роутинг выключен, то по данному коду в следующих сообщениях можно вывести результат пользовательского ответа.',
+        default=None, null=True, blank=True
     )
 
     class Meta:
@@ -402,7 +408,7 @@ class Message(CreateUpdateTracker):
             'markup': markup,
             'ways': ways,
             'need_routing': self.need_routing,
-            'msg_query': self.encode_msg_name(self.name)
+            'msg_query': self.message_code if self.message_code else self.encode_msg_name(self.name)
         }
         if self.message_type == MessageType.POLL:
             poll = Poll.objects.filter(message=self).first()

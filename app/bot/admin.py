@@ -133,6 +133,12 @@ class MessageAdmin(admin.ModelAdmin):
                 ("files",),
             ),
         }),
+        ('Дополнительно', {
+            'fields': (
+                ("need_routing",),
+                ("message_code",),
+            ),
+        }),
         ('Важные даты', {
             'fields': (
                 ('created_at',),
@@ -142,6 +148,7 @@ class MessageAdmin(admin.ModelAdmin):
     )
     readonly_fields = ('created_at', 'updated_at', 'pk')
     filter_horizontal = ('files',)
+    prepopulated_fields = {'message_code': ('name',)}
 
     def set_zeros(self, request, queryset):
         queryset.update(clicks=0)
