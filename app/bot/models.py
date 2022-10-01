@@ -19,7 +19,7 @@ from abridge_bot.settings import DEEP_CASHBACK_PERCENT, USER_CASHBACK_PERCENT
 from bot.handlers.utils.info import extract_user_data_from_update
 from utils.models import CreateUpdateTracker, CreateTracker, nb, GetOrNoneManager
 
-from django.db.models.signals import post_delete, post_save
+from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 import redis
 
@@ -88,8 +88,6 @@ class User(CreateUpdateTracker):
         coders = []
         if self.first_name is None:
             coders.append('first_name')
-        if self.last_name is None:
-            coders.append('last_name')
         if self.username is None:
             coders.append('username')
 
@@ -101,23 +99,20 @@ class User(CreateUpdateTracker):
         keywords =  {
             self.user_id: ['user_id'],
             deep_user: ['deep_user'],
-            self.last_name: ['last_name'],
             self.first_name: ['first_name'],
             self.username: ['username'],
             self.balance: ['balance'],
             self.cashback_balance: ['cashback_balance'],
             DEEP_CASHBACK_PERCENT * 100: ['DEEP_CASHBACK_PERCENT'],
             USER_CASHBACK_PERCENT * 100: ['USER_CASHBACK_PERCENT'],
-            '': coders
         }
+        if len(coders) > 0:
+            keywords[''] = coders
         return keywords
     
     def to_str(self):
         name = self.first_name or f'@{self.username}' or self.last_name or f'{self.user_id}'
         return f'{name}'
-
-    def update_info(self, new_data):
-        pass
     
     def set_keywords(self):
         r = redis.from_url(REDIS_URL)
@@ -159,6 +154,12 @@ class User(CreateUpdateTracker):
             prev_state = json.loads(r.get(message_id))
             next_state_id = prev_state['ways'].get(msg_text_key, r.get('error'))
 
+            if not prev_state['need_routing']:
+                choices = r.get(f'{user_id}_choices')
+                choices = json.loads(choices) if choices else {}
+                choices[msg_text_key] = prev_state['msg_query']
+                r.set(f'{user_id}_choices', value=json.dumps(choices))
+
         else:
             prev_state = None
             next_state_id = r.get('start')
@@ -176,14 +177,29 @@ class User(CreateUpdateTracker):
     
     @staticmethod
     def _load_keywords(r, user_id):
-        user_keywords = json.loads(r.get(f'{user_id}_keywords'))
+        user_kw = json.loads(r.get(f'{user_id}_keywords'))
 
-        vpn_keywords = r.get(f'{user_id}_vpn_keywords')
-        vpn_keywords = json.loads(vpn_keywords) if vpn_keywords else {}
+        vpn_status = r.get(f'{user_id}_vpn_status') 
+        if vpn_status in ['unlimited', 'base']:
+            vpn_kw = r.get(f'{user_id}_vpn_keywords')
 
-        proxy_keywords = r.get(f'{user_id}_proxy_keywords')
-        proxy_keywords = json.loads(proxy_keywords) if proxy_keywords else {}
-        keywords = {**user_keywords, **vpn_keywords, **proxy_keywords}
+        elif vpn_status == 'test':
+            vpn_kw = r.get(f'{user_id}_test_vpn_keywords')
+            
+        else:
+            # user did not use vpn befor
+            vpn_kw = r.get(f'default_vpn_keywords')
+
+       
+
+        proxy_kw = r.get(f'{user_id}_proxy_keywords')
+        proxy_kw = json.loads(proxy_kw) if proxy_kw else {}
+
+        choices_kw = r.get(f'{user_id}_choices')
+        choices_kw = json.loads(choices_kw) if choices_kw else {}
+
+        
+        keywords = {**user_kw, **vpn_kw, **proxy_kw}
         return keywords
         
     
@@ -314,6 +330,11 @@ class Message(CreateUpdateTracker):
         blank=True,
         verbose_name='Картинки, Видео, Файлы'
     )
+    need_routing = models.BooleanField(
+        'Раутинг',
+        help_text='Нужно ли искать сообщения, соответсвующие кнопкам',
+        default=True
+    )
 
     class Meta:
         verbose_name = 'Сообщение'
@@ -338,16 +359,17 @@ class Message(CreateUpdateTracker):
         msg_dict = self._gen_msg_dict()
         regex = r"(\[[^\[\]]+\]\([^\(\)]+\)\s*\n)|(\[[^\[\]]+\]\s*\n)|(\[[^\[\]]+\]\([^\(\)]+\))|(\[[^\[\]]+\])"
         # group 1 - элемент кнопки с сылкой (с \n)
-        # group 2 - обычный элемент кнопки опроса (с \n)
+        # group 2 - обычный элемент кнопки (с \n)
 
         # group 3 - элемент кнопки с сылкой (без \n)
-        # group 4 - обычный элемент кнопки опроса (без \n)
+        # group 4 - обычный элемент кнопки (без \n)
         self.text = re.sub('\\r', '', self.text)
         matches = re.finditer(regex, self.text, re.MULTILINE)
 
         markup = [[]]
         ways = {}
         end_text = 100000
+        lbtnq_id = -1; 
         for match in matches:
             group = match.group()
             end_text = min(end_text, match.start())
@@ -365,14 +387,22 @@ class Message(CreateUpdateTracker):
                 markup.append([])
 
             if groupNum in (2, 4):
-                btn_query_name = self.encode_msg_name(btn)
-                ways[btn_query_name] = msg_dict[btn_query_name]
+                btnq_n = self.encode_msg_name(btn)
+                lbtnq_id = msg_dict[btnq_n] if self.need_routing else msg_dict.get(btnq_n, lbtnq_id)
+                ways[btnq_n] = lbtnq_id
+
+        if not self.need_routing:
+            assert lbtnq_id > -1, 'You wrote incorrect message names'
+            for k in ways.keys():
+                ways[k] = lbtnq_id
 
         res = {
             'message_type': self.message_type,
             'text': self.text[:end_text],
             'markup': markup,
-            'ways': ways
+            'ways': ways,
+            'need_routing': self.need_routing,
+            'msg_query': self.encode_msg_name(self.name)
         }
         if self.message_type == MessageType.POLL:
             poll = Poll.objects.filter(message=self).first()
@@ -489,6 +519,7 @@ class Broadcast(CreateTracker):
         ids1 = self.users.values_list('user_id', flat=True)
         ids2 = self.group.users.values_list('user_id', flat=True)
         return list(set(ids1+ids2))
+
 
 
 @receiver(post_save, sender=Message)

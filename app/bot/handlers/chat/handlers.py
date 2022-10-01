@@ -1,6 +1,4 @@
 import datetime
-from email import message
-import logging
 import re
 from django.utils import timezone
 
@@ -13,7 +11,8 @@ from proxy.models import Proxy
 from bot.handlers.utils import utils
 from bot.handlers.utils.info import extract_user_data_from_update
 from bot.tasks import send_delay_message, check_deep_link
-from abridge_bot.settings import PROGREV_NAMES
+from abridge_bot.settings import PROGREV_NAMES, TELEGRAM_SUPPORT_CHAT
+
 
 
 def command_start(update: Update, context: CallbackContext) -> None:
@@ -35,7 +34,6 @@ def command_start(update: Update, context: CallbackContext) -> None:
     
     recive_command(update, context)
             
-
 
 def command_account(update: Update, context: CallbackContext) -> None: # TODO
     u, _ = User.get_user_and_created(update, context)
@@ -65,10 +63,29 @@ def recive_command(update: Update, context: CallbackContext) -> None:
     )
 
 
-def recive_message(update: Update, context: CallbackContext) -> None:
-    user_id = extract_user_data_from_update(update)["user_id"]
-    msg_text = update.message.text
+def _forward_to_support(update: Update, context: CallbackContext) -> None:
+    u = User.get_user(update, context)
+    li = f'<a href="https://bridge-vpn.store/admin/bot/user/{u.user_id}/change/">' \
+        f'{u.first_name} {u.last_name} ({u.user_id})</a>\n' \
+        f'{u.balance}\n{u.cashback_balance}'
 
+    text = f"{update.message.text}\n\n{li}"
+    context.bot.send_message(
+        chat_id=int(TELEGRAM_SUPPORT_CHAT),
+        text=text,
+        parse_mode=ParseMode.HTML,
+        disable_web_page_preview=True
+    )
+
+
+def recive_message(update: Update, context: CallbackContext) -> None:
+    if context.user_data.pop('ask_support', False):
+        _forward_to_support(update, context)
+        msg_text = 'Отправил вопрос в поддержку'
+    else:
+        msg_text = update.message.text
+
+    user_id = extract_user_data_from_update(update)["user_id"]
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
 
     prev_msg_id = utils.send_message(
@@ -113,16 +130,11 @@ def receive_poll_answer(update: Update, context) -> None:
     answered_poll = context.bot_data[answer.poll_id]
     if len(answer.option_ids) > 0:
         answer_text = answered_poll['questions'][answer.option_ids[0]]
-   
         context.bot.stop_poll(answered_poll["chat_id"], answered_poll["message_id"])
-        
         Poll.update_poll(answered_poll["poll_id"], answer=answer_text)
-
-        
         user_id = answered_poll['chat_id']
-        msg_text = answer_text.lower().replace(' ', '')
 
-        prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
+        prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, answer_text)
 
         prev_msg_id = utils.send_message(
             prev_state=prev_state,
@@ -133,11 +145,15 @@ def receive_poll_answer(update: Update, context) -> None:
         )
         User.set_message_id(user_id, prev_msg_id)
         utils.send_logs_message(
-            msg_text=msg_text, 
+            msg_text=answer_text, 
             user_keywords=next_state['user_keywords'], 
             prev_state=prev_state
         )
 
+
+def command_support(update: Update, context: CallbackContext) -> None:
+    context.user_data['ask_support'] = True
+    recive_command(update, context)
 
 def forward_from_support(update: Update, context: CallbackContext) -> None:
     replay_msg = update.message.reply_to_message
@@ -155,3 +171,4 @@ def forward_from_support(update: Update, context: CallbackContext) -> None:
     update.effective_chat.send_message(
         text='Cообщение отправлено',
     )
+
