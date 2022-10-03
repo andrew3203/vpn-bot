@@ -54,7 +54,8 @@ def setup_dispatcher(dp):
     # proxy action messages
     dp.add_handler(CallbackQueryHandler(Filters.regex(r'^купитьпрокси$'), action_handlers.buy_proxy))
 
-    
+    # payment action messages
+    dp.add_handler(CallbackQueryHandler(Filters.regex(r'^\d+₽$'), action_handlers.topup))
 
     # recive all messages
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command & ~Filters.chat(chat_id=int(TELEGRAM_SUPPORT_CHAT)), chat.recive_message))

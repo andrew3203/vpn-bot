@@ -19,21 +19,21 @@ services:
       - vpn_bot_db
       - vpn_bot_redis
   
-  vpn_bot:
-    build:
-      context: ./app
-      dockerfile: Dockerfile.prod
-    container_name: vpn_bot
-    command: python run_pooling.py
-    volumes:
-      - static_volume:/home/app/web/staticfiles
-      - media_volume:/home/app/web/mediafiles
-    env_file:
-      - ./.env.prod
-    depends_on:
-      - vpn_bot_web
-      - vpn_bot_redis 
-      - vpn_bot_db
+#  vpn_bot:
+#    build:
+#      context: ./app
+#      dockerfile: Dockerfile.prod
+#    container_name: vpn_bot
+#    command: python run_pooling.py
+#    volumes:
+#      - static_volume:/home/app/web/staticfiles
+#      - media_volume:/home/app/web/mediafiles
+#    env_file:
+#      - ./.env.prod
+#    depends_on:
+#      - vpn_bot_web
+#      - vpn_bot_redis 
+#      - vpn_bot_db
   
   vpn_bot_db:
     container_name: vpn_bot_db
@@ -91,10 +91,10 @@ services:
     depends_on:
       - vpn_bot_web
 
-#networks:
-#  default:
-#    name: nginxproxymanager_default
-#    external: true
+networks:
+  default:
+    name: nginxproxymanager_default
+    external: true
 
 volumes:
   postgres_data:

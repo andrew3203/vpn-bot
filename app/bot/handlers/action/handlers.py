@@ -1,4 +1,5 @@
-from bot.handlers.chat.handlers import recive_calback, recive_command, recive_message
+import imp
+from bot.handlers.chat.handlers import recive_calback
 from bot.handlers.utils.info import extract_user_data_from_update
 from telegram import Update
 from telegram.ext import CallbackContext
@@ -8,6 +9,7 @@ from bot.models import User
 from vpn.models import Order, Peer
 from proxy.models import ProxyOrder
 from bot.handlers.utils import utils
+from payment.models import Payment
 import json
 
 def _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context):
@@ -122,4 +124,20 @@ def buy_proxy(update: Update, context: CallbackContext) -> None:
     r.delete(f'{user_id}_choices')
     update.callback_query.answer()
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
+    _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
+
+
+def topup(update: Update, context: CallbackContext) -> None:
+    user_id = extract_user_data_from_update(update)["user_id"]
+    r = redis.from_url(REDIS_URL, decode_responses=True)
+    msg_text = update.callback_query.data
+    price = int(msg_text[:-1])
+    confirmation_url = Payment.yoo_make_payment(price=price, user_id=user_id)
+    update.callback_query.answer()
+    msg_text = update.callback_query.data
+    prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
+    for i in range(len(next_state['markup'])):
+        for j in range(len(next_state['markup'][i])):
+            next_state['markup'][i][j][-1] = confirmation_url
+
     _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
