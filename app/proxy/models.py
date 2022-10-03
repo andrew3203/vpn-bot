@@ -1,46 +1,169 @@
 from django.db import models
-from utils.models import CreateUpdateTracker, nb
-from django.utils import timezone
+from utils.models import CreateUpdateTracker
+from datetime import datetime, timedelta
 from datetime import timedelta
-from django.db.models.signals import post_delete, post_save
+from django.db.models.signals import  post_save
 from django.dispatch import receiver
 import redis
 import json
 from abridge_bot.settings import REDIS_URL
-import humanize
 from proxy.dispatcher import proxy_connector
+from bot.handlers.utils.utils import admin_logs_message
+from bot.handlers.admin.static_text import proxy_balance, balance_error
+from proxy.tasks import deactivate_order, run_auto_prolong_task
 
 from bot.models import User
 
 
-class Proxy(CreateUpdateTracker):
+class ProxyOrder(CreateUpdateTracker):
     user = models.ForeignKey(
         User,
-        verbose_name='Владелец',
+        verbose_name='Владалец',
+        on_delete=models.SET_NULL, null=True
+    )
+    date_end = models.DateTimeField(
+        'Время окончания'
+    )
+    proxy_country = models.CharField(
+        'Страна',
+        max_length=2
+    )
+    proxy_version = models.IntegerField(
+        'Версия',
+    )
+    proxy_type = models.CharField(
+        'Тип',
+        max_length=50
+    )
+    auto_prolong = models.BooleanField(
+        'Продлевать автоматически',
+        default=False
+    )
+    active = models.BooleanField(
+        'Активный',
+        default=True
+    )
+    refounded = models.BooleanField(
+        'Деньги возвращены',
+        default=True
+    )
+
+    class Meta:
+        verbose_name = 'Заказ'
+        verbose_name_plural = 'Заказы'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.user} - {self.tariff}'
+
+    def get_keywords(self) -> dict:
+        keywords = {}
+        all_proxy = Proxy.objects.filter(order=self)
+        proxy_list = '\n'.join([f'<code>{p}</code>' for p in all_proxy])
+        keywords['proxy_list'] = proxy_list
+        keywords['proxy_date_end'] = self.date_end
+        keywords['proxy_version'] = f'IPv{self.proxy_version}'
+        keywords['proxy_type'] = self.proxy_type.upper()
+        keywords['proxy_country'] = self.proxy_country.upper()
+        keywords['proxy_auto_prolong'] = 'Да' if self.auto_prolong else 'Нет'
+        return keywords
+
+    def set_keywords(self):
+        r = redis.from_url(REDIS_URL)
+        key = f'{self.user.user_id}_proxy_keywords'
+        proxy_keywords = self.get_keywords()
+        r.set(key, value=json.dumps(proxy_keywords, ensure_ascii=False))
+
+    @staticmethod
+    def create_new_order(
+        user_id: int, version: int, 
+        country: str,  period: int, ptype: str, 
+        count: str, auto_prolong: bool = False
+    ) -> str:
+        resp = proxy_connector.get_price(period=period, version=version, count=count)
+        accautn_balance, price = resp['balance'], resp['price']
+
+        if accautn_balance - price >= 0:
+            u = User.objects.get(user_id=user_id)
+            if u.balance - price >= 0:
+                u.balance -= price; u.save()
+                admin_logs_message(
+                    proxy_balance, accautn_balance=accautn_balance-price, 
+                    count=count, price=price, version=version
+                )
+                proxy_list = proxy_connector.buy(
+                    count=count, period=period, country=country, version=version
+                )['list'].values()
+                order = ProxyOrder.objects.create(
+                    user=u, date_end=datetime.strptime(proxy_list[0]['date_end'], "%Y-%m-%d H:M:S") ,
+                    proxy_version=version, proxy_type=ptype, proxy_country=country
+                )
+                for p in proxy_list:
+                    new_proxy = Proxy.objects.create(
+                        proxy_id=p['id'],
+                        proxy=f"{p['host']}:{p['port']}:{p['user']}:{p['pass']}"
+                    )
+                    new_proxy.save()
+                    order.proxy.add(new_proxy)
+                order.auto_prolong = auto_prolong
+                order.save()
+                return 'Прокси куплены'
+            return 'Недостаточно средств'
+        return 'На акаунте нету денег'
+    
+    @staticmethod
+    def prolong_order(order_id):
+        order = ProxyOrder.objects.get(pk=order_id)
+        
+        proxies = order.proxy.all()
+        count = proxies.count()
+        period = (order.date_end - order.created_at).days
+
+        price = proxy_connector.get_price(
+            period=period,
+            version=order.proxy_version, count=count
+        )['price']
+        accautn_balance = proxy_connector.get_status()['balance']
+
+        u = order.user
+        if u.balance - price >= 0:
+
+            if accautn_balance - price >= 0:
+                u.balance -= price; u.save()
+                admin_logs_message(
+                    proxy_balance, accautn_balance=accautn_balance, 
+                    count=count, price=price, version=order.proxy_version
+                )
+                proxy_ids = list(proxies.values_list('proxy_id', flat=True))
+                proxy_connector.prolong(period=period, ids=','.joint(proxy_ids))
+                order.date_end += timedelta(days=period); order.save()
+                return 'Прокси куплены', u.user_id
+            else:
+                admin_logs_message(
+                    balance_error, accautn_balance=accautn_balance, 
+                    user_id=u.user_id, price=price
+                )
+                return 'На акаунте нету денег', u.user_id
+
+        order.active = False
+        order.save()
+        return 'Недостаточно средств', u.user_id
+
+   
+class Proxy(CreateUpdateTracker):
+    order = models.ForeignKey(
+        ProxyOrder,
+        verbose_name='Заказ',
         on_delete=models.CASCADE,
     )
     proxy_id = models.PositiveBigIntegerField(
         'Прокси id',
         primary_key=True
     )
-    proxy = models.TextField(
+    proxy = models.CharField(
         'Прокси',
         help_text='IP : PORT : USER : PASSWORD',
         max_length=500
-    )
-    date_end = models.DateTimeField(
-        'Время окончания'
-    )
-    version = models.IntegerField(
-        'Версия',
-    )
-    ptype = models.CharField(
-        'Тип',
-        max_length=50
-    )
-    country = models.CharField(
-        'Страна',
-        max_length=2
     )
 
     class Meta:
@@ -51,93 +174,39 @@ class Proxy(CreateUpdateTracker):
     def __str__(self):
         return f'{self.proxy}'
     
-    def get_keywords(self):
-        now = timezone.now()
-        humanize.i18n.activate("ru_RU")
-        if self.date_end > now:
-            time_left =  humanize.precisedelta(self.date_end - now)
-        else:
-            time_left =  humanize.naturaltime(self.date_end - now)
-        keywords = {}
-        keywords =  {
-            self.proxy_id: ['proxy_id'],
-            self.proxy: ['proxy'],
-            self.date_end: ['date_end'],
-            f'IPv{self.version}': ['version'],
-            self.country: ['country'],
-            time_left: ['time_left'],
-        }
-        return keywords
+    @property
+    def user(self):
+        return self.order.user
 
-    def update_keywords(self):
-        r = redis.from_url(REDIS_URL, decode_responses=True)
-        key = f'{self.user.user_id}_proxy_keywords'
-        proxy_keywords = r.get(key)
-        if proxy_keywords:
-            proxy_keywords = json.loads(proxy_keywords)
-        else:
-            proxy_keywords = []
-        
-        proxy_keywords.append(self.get_keywords())
-        r.set(key, value=json.dumps(proxy_keywords, ensure_ascii=False))
+    @property
+    def country(self):
+        return self.order.proxy_country
     
-    def set_keywords(self):
-        r = redis.from_url(REDIS_URL, decode_responses=True)
-        key = f'{self.user.user_id}_proxy_keywords'
-        proxy_keywords = [self.get_keywords()]
-        
-        r.set(key, value=json.dumps(proxy_keywords, ensure_ascii=False))   
-        
+    @property
+    def ptype(self):
+        return self.order.proxy_type
 
-    @staticmethod
-    def update_info(user_id):
-        #ids = ','.join(list(proxy.values_list('proxy_id', flat=True)))
-        # if len(ids) > 1:
-        #    resp = proxy_connector.get_proxy(descr=user_id)
-        #    proxy_list = resp.get('list')
-        now = timezone.now() 
-        timedelta(days=1)
-        proxy_list = ''
-        delta = proxy.date_end - now
-        for proxy in Proxy.objects.filter(user__user_id=user_id):
-            if delta > timedelta(hours=8):
-                proxy_connector.delete(ids=f'{proxy.proxy_id}')
-                proxy.delete()
+    @property
+    def version(self):
+        return self.order.proxy_version
+
+    @property
+    def date_end(self):
+        return self.order.date_end
+
+
+@receiver(post_save, sender=ProxyOrder)
+def set_proxy_cash(sender, instance, created, **kwargs):
+    if instance.active:
+        instance.set_keywords()
+
+        if created:
+            end_date = instance.date_end
+            kwargs = {'order_id': instance.pk}
+            if instance.auto_prolong:
+                run_auto_prolong_task.apply_async(kwargs=kwargs, eta=end_date)
             else:
-                humanize.i18n.activate("ru_RU")
-                time_left =  humanize.precisedelta(delta) if proxy.date_end > now else humanize.naturaltime(delta)
-                proxy_list += f'ID: {proxy.pk}, Версия: IPv{proxy.version}, Тип: {proxy.ptype.upper()}, Осталось: {time_left}\n'
-                proxy_list += f'<code>{proxy.proxy}</code>\n'
-        
+                deactivate_order.apply_async(kwargs=kwargs, eta=end_date+timedelta(hours=10))
+    else:
         r = redis.from_url(REDIS_URL)
-        key = f'{user_id}_proxy_keywords'
-        r.set(key, value=json.dumps({'proxy_list': proxy_list}, ensure_ascii=False))
-
-        
-        
-       
-            
-        return {}
-
-
-    @staticmethod
-    def make_cashes():
-        cash = {}
-        for proxy in Proxy.objects.all():
-            cash = {**cash, **proxy.make_cash()}
-        return cash
-    
-
-def balance_check():
-    pass
-    
-
-@receiver(post_save, sender=Proxy)
-def set_proxy_cash(sender, instance, **kwargs):
-    instance.set_keywords() 
-
-
-@receiver(post_delete, sender=Proxy)
-def del_proxy_cash(sender, instance, **kwargs):
-    r = redis.from_url(REDIS_URL)
-    r.delete(f'{instance.user.user_id}_proxy_keywords') 
+        r.delete(f'{instance.user.user_id}_proxy_keywords')

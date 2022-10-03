@@ -21,6 +21,7 @@ from telegram.ext.filters import Filters
 from bot.handlers.admin import handlers as admin_handlers
 from bot.handlers.chat import handlers as chat
 from bot.handlers.utils import error
+from bot.handlers.action import handlers as action_handlers
 
 
 
@@ -42,7 +43,19 @@ def setup_dispatcher(dp):
     
     # recive all commands
     dp.add_handler(MessageHandler(Filters.command, chat.recive_command))
+
+    # vpn action messages
+    dp.add_handler(CallbackQueryHandler(Filters.regex(r'^уменяестьприложение$'), action_handlers.create_new_vpn_order))
+    dp.add_handler(CallbackQueryHandler(Filters.regex(r'^приобрести$'), action_handlers.create_new_vpn_order))
+    dp.add_handler(CallbackQueryHandler(Filters.regex(r'^янемогуотсканироватьqrcode$'), action_handlers.cant_scan_qr))
+    dp.add_handler(CallbackQueryHandler(Filters.regex(r'^купитьгб$'), action_handlers.buy_traffic))
+    dp.add_handler(CallbackQueryHandler(Filters.regex(r'^удалитьподключение$'), action_handlers.delete_peer))
+
+    # proxy action messages
+    dp.add_handler(CallbackQueryHandler(Filters.regex(r'^купитьпрокси$'), action_handlers.buy_proxy))
+
     
+
     # recive all messages
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command & ~Filters.chat(chat_id=int(TELEGRAM_SUPPORT_CHAT)), chat.recive_message))
 

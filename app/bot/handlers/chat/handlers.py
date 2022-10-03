@@ -1,6 +1,5 @@
 import datetime
 import re
-from django.utils import timezone
 
 from django.utils import timezone
 from telegram import ParseMode, Update
@@ -154,6 +153,7 @@ def receive_poll_answer(update: Update, context) -> None:
 def command_support(update: Update, context: CallbackContext) -> None:
     context.user_data['ask_support'] = True
     recive_command(update, context)
+
 
 def forward_from_support(update: Update, context: CallbackContext) -> None:
     replay_msg = update.message.reply_to_message

@@ -191,4 +191,9 @@ def send_logs_message(msg_text, user_keywords, prev_state):
         f'<b>{user_keywords.get("first_name", "Noname")} {user_keywords.get("last_name", "Noname")}</b> ({user_keywords.get("user_id", "Noname")})\n' \
 
 
-    #_send_message(user_id=TELEGRAM_LOGS_CHAT_ID, text=message_text)
+    _send_message(user_id=TELEGRAM_LOGS_CHAT_ID, text=message_text)
+
+
+def admin_logs_message(msg_text, **kwargs):
+    message_text = msg_text.format(**kwargs)
+    _send_message(user_id=TELEGRAM_LOGS_CHAT_ID, text=message_text)

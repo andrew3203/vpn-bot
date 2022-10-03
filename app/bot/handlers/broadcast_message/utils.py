@@ -56,10 +56,11 @@ def _send_message(
     bot = telegram.Bot(tg_token)
     try:
         if photo:
+            photo = open(photo, 'rb') if type(photo) == type('str') else photo
             m = bot.send_photo(
                 chat_id=user_id,
                 caption=text,
-                photo=open(photo, 'rb'),
+                photo=photo,
                 parse_mode=parse_mode, 
                 reply_markup=reply_markup,
             )

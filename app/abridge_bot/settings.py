@@ -200,7 +200,12 @@ YOO_MSG_NAMES = [
 VPN_MSG_NAMES = [
     ('traffic_05', 'У вас осталось меньше 0.5 ГБ'),
     ('traffic_0', 'У вас закончисля трафик'),
-    ('have_no_orders', 'У вас нету заказов')
+    ('order_auto_prolonged', 'Ваш заказ автоматически продлен'),
+    ('order_cant_updated', 'Не получилось продлить заказ'),
+    ('order_cenceled', 'Ваш заказ закрыт'),
+    ('comes_to_the_end', 'Прошел месяц с покупки'),
+    ('have_no_orders', 'У вас нету заказов'),
+
 ]
 MSG_PRIMARY_NAMES.append(PROGREV_NAMES)
 MSG_PRIMARY_NAMES.append(YOO_MSG_NAMES)
@@ -212,6 +217,12 @@ DEEP_CASHBACK_PERCENT = 0.05 # bonus cashback for invitor
 USER_CASHBACK_PERCENT = 0.10 # bonus cashback for invited user
 AVAILABLE_TOUPS = [100, 200, 500, 1000, 5000]
 
+# VPN GBs
+AVAILABLE_GBs = {
+    1: 79,
+    3: 249,
+    5: 349
+}
 
 # PROXY API
 PROXY_API_KEY = os.environ.get("PROXY_API_KEY")
