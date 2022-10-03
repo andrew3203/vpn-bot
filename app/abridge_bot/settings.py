@@ -154,7 +154,7 @@ MEDIA_ROOT = BASE_DIR / "mediafiles"
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 # CELERY
-REDIS_URL = os.environ.get('REDIS_URL', 'redis://redis:6379')
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://vpn_bot_redis:6379')
 BROKER_URL = REDIS_URL
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL

@@ -8,8 +8,8 @@ class ProxyConnector(object):
     
     def __init__(self, api_key: str) -> None:
         self.api_key = api_key
-        resp = self.get_status()
-        assert resp['status'] == 'yes', 'Connection Error'
+        #resp = self.get_status()
+        #assert resp['status'] == 'yes', 'Connection Error'
         
     
     def __get_url(self, **kwargs) -> dict:
