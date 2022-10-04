@@ -31,24 +31,24 @@ def create_new_vpn_order(update: Update, context: CallbackContext) -> None:
     user_id = extract_user_data_from_update(update)["user_id"]
     qr_photo = None
 
-    info = VpnOrder.get_user_info()
-    if info is None:
+    info, created = VpnOrder.get_user_info()
+    if created or info['tariff_name'] == 'Пробный':
+        country, tariff_name = info['country'], info['tariff_name']
+    else:
         k1 = 'выбратьстрану'; k2 = 'сменитьтариф'
         country, tariff_name = User.pop_choices(user_id, k1, k2)
-        order, msg_text = VpnOrder.create_or_change(
-            user_id=user_id,
-            country=country, tariff_name=tariff_name
-        )
-        qr_photo = order.peers.first().get_qr()
-        msg_text = update.callback_query.data
-    else:
-        msg_text = 'У вас есть уже VPN'
+
+    order, msg_text = VpnOrder.create_or_change(
+        user_id=user_id,
+        country=country, tariff_name=tariff_name
+    )
+    qr_photo = order.peers.first().get_qr()
+    msg_text = update.callback_query.data
 
     update.callback_query.answer()
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
-    if qr_photo:
-        photos = next_state.get("photos", [])
-        next_state['photos'] = [qr_photo] + photos
+    photos = next_state.get("photos", [])
+    next_state['photos'] = [qr_photo] + photos
     _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
 
 

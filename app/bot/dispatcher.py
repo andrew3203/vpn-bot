@@ -46,14 +46,15 @@ def setup_dispatcher(dp):
 
     # vpn action messages
     dp.add_handler(CallbackQueryHandler(action_handlers.create_new_vpn_order, pattern=r'^уменяестьприложение$'))
-    dp.add_handler(CallbackQueryHandler(action_handlers.create_new_vpn_order, pattern=r'^приобрести$'))
     dp.add_handler(CallbackQueryHandler(action_handlers.cant_scan_qr, pattern=r'^янемогуотсканироватьqrcode$'))
     dp.add_handler(CallbackQueryHandler(action_handlers.buy_traffic, pattern=r'^купитьгб$'))
+    dp.add_handler(CallbackQueryHandler(action_handlers.create_new_vpn_order, pattern=r'^приобреститариф$'))
+    
     dp.add_handler(CallbackQueryHandler(action_handlers.delete_peer, pattern=r'^удалитьподключение$'))
 
     # proxy action messages
     dp.add_handler(CallbackQueryHandler(action_handlers.buy_proxy, pattern=r'^купитьпрокси$'))
-    dp.add_handler(CallbackQueryHandler(action_handlers.show_countrys, pattern=r'^общиеipv4$'))
+    dp.add_handler(CallbackQueryHandler(action_handlers.show_countrys, pattern=r'^выбратьстранупрокси$'))
 
     # payment action messages
     dp.add_handler(CallbackQueryHandler(callback=action_handlers.topup, pattern=r'^\d+₽$'))

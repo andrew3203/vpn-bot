@@ -301,10 +301,12 @@ class VpnOrder(CreateTracker):
         data = r.get(f'{user_id}_vpn_data')
         if data:
              data = json.loads(data)
+             created = False
         else:
             data = {'tariff_name': 'Пробный', 'country': 'DE'}
+            created = True
             
-        return data
+        return data, created
 
 
 
