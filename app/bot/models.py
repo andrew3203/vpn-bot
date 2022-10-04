@@ -414,7 +414,7 @@ class Message(CreateUpdateTracker):
         common_ways = {}
         for k, msg_name in MSG_PRIMARY_NAMES:
             m = Message.objects.filter(name=msg_name).first()
-            common_ways[k] = m.id if m else 1
+            common_ways[k] = m.pk if m else 1
 
         cash = {}
         cash['start'] = common_ways['start']
@@ -431,7 +431,7 @@ class Message(CreateUpdateTracker):
         common_ways = {}
         for k, msg_name in MSG_PRIMARY_NAMES:
             m = Message.objects.filter(name=msg_name).first()
-            common_ways[k] = m.id if m else 1
+            common_ways[k] = m.pk if m else 1
 
         cash = {}
         cash['start'] = common_ways['start']
