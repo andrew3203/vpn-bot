@@ -40,16 +40,16 @@ def setup_dispatcher(dp):
     
     # forward user question to support chat
     dp.add_handler(CommandHandler("support", chat.command_support))
-    
-    # recive all commands
-    dp.add_handler(MessageHandler(Filters.command, chat.recive_command))
+
+    dp.add_handler(MessageHandler(Filters.regex(r'^/prolong(/s)?.*'), action_handlers.prolong_command))
+    dp.add_handler(MessageHandler(Filters.regex(r'^/check(/s)?.*'), action_handlers.check_command))
+    dp.add_handler(MessageHandler(Filters.regex(r'^/change(/s)?.*'), action_handlers.change_command))
 
     # vpn action messages
     dp.add_handler(CallbackQueryHandler(action_handlers.create_new_vpn_order, pattern=r'^уменяестьприложение$'))
     dp.add_handler(CallbackQueryHandler(action_handlers.cant_scan_qr, pattern=r'^янемогуотсканироватьqrcode$'))
     dp.add_handler(CallbackQueryHandler(action_handlers.buy_traffic, pattern=r'^купитьгб$'))
     dp.add_handler(CallbackQueryHandler(action_handlers.create_new_vpn_order, pattern=r'^приобреститариф$'))
-    
     dp.add_handler(CallbackQueryHandler(action_handlers.delete_peer, pattern=r'^удалитьподключение$'))
 
     # proxy action messages
@@ -58,6 +58,9 @@ def setup_dispatcher(dp):
 
     # payment action messages
     dp.add_handler(CallbackQueryHandler(callback=action_handlers.topup, pattern=r'^\d+₽$'))
+
+    # recive all commands
+    dp.add_handler(MessageHandler(Filters.command, chat.recive_command))
 
     # recive all messages
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command & ~Filters.chat(chat_id=int(TELEGRAM_SUPPORT_CHAT)), chat.recive_message))
@@ -138,7 +141,7 @@ def set_up_commands(bot_instance: Bot) -> None:
 
 # WARNING: it's better to comment the line below in DEBUG mode.
 # Likely, you'll get a flood limit control error, when restarting bot too often
-# set_up_commands(bot)
+set_up_commands(bot)
 
 n_workers = 1 if DEBUG else 4
 dispatcher = setup_dispatcher(Dispatcher(

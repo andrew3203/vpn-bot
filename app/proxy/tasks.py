@@ -25,3 +25,25 @@ def deactivate_order(order_id):
 def run_auto_prolong_task(order_id):
     msg_name, user_id = ProxyOrder.prolong_order(order_id)
     send_delay_message.delay(user_id=user_id, msg_name=msg_name)
+
+
+@app.task(ignore_result=True)
+def prolong_orders_task(order_ids, period):
+    for order_id in order_ids:
+        msg_name, user_id = ProxyOrder.prolong_order(int(order_id), period)
+        send_delay_message.delay(user_id=user_id, msg_name=msg_name)
+
+@app.task(ignore_result=True)
+def ckeck_orders_task(order_ids):
+    msg_name = 'Результат проверки'
+    for order_id in order_ids:
+        user_id = ProxyOrder.check_order(int(order_id))
+        send_delay_message.delay(user_id=user_id, msg_name=msg_name)
+
+
+@app.task(ignore_result=True)
+def change_order_task(order_ids):
+    msg_name = 'Результат изменения типа'
+    for order_id in order_ids:
+        user_id = ProxyOrder.change_order(int(order_id))
+        send_delay_message.delay(user_id=user_id, msg_name=msg_name)

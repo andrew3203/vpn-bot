@@ -9,6 +9,8 @@ from proxy.dispatcher import get_markup_countries
 from bot.handlers.utils import utils
 from payment.models import Payment
 from bot.handlers.action import static_text
+from proxy import tasks
+import re
 
 
 def _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context):
@@ -123,4 +125,42 @@ def topup(update: Update, context: CallbackContext) -> None:
     msg_text = update.callback_query.data
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
     next_state['markup'] = [[(c[0], cnfrm_url) for c in r]for r in next_state['markup']]
+    _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
+
+
+def prolong_command(update: Update, context: CallbackContext) -> None:
+    user_id = extract_user_data_from_update(update)["user_id"]
+    order_ids = re.findall('\d+', update.message.text)
+    if len(order_ids) > 1:
+        period = int(order_ids.pop(-1))
+        tasks.prolong_orders_task.delay(order_ids, period)
+        msg_text = 'Запрос отправлен'
+    else:
+        msg_text = 'Ошибка ввода'
+    prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
+    _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
+
+
+
+def check_command(update: Update, context: CallbackContext) -> None:
+    user_id = extract_user_data_from_update(update)["user_id"]
+    order_ids = re.findall('\d+', update.message.text)
+    if len(order_ids) > 0:
+        tasks.ckeck_orders_task.delay(order_ids)
+        msg_text = 'Запрос отправлен'
+    else:
+        msg_text = 'Ошибка ввода'
+    prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
+    _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
+
+
+def change_command(update: Update, context: CallbackContext) -> None:
+    user_id = extract_user_data_from_update(update)["user_id"]
+    order_ids = re.findall('\d+', update.message.text)
+    if len(order_ids) > 0:
+        tasks.change_order_task.delay(order_ids)
+        msg_text = 'Запрос отправлен'
+    else:
+        msg_text = 'Ошибка ввода'
+    prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
     _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)

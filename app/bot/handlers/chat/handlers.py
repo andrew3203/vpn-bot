@@ -75,7 +75,7 @@ def _forward_to_support(update: Update, context: CallbackContext) -> None:
         parse_mode=ParseMode.HTML,
         disable_web_page_preview=True
     )
-
+    
 
 def recive_message(update: Update, context: CallbackContext) -> None:
     if context.user_data and context.user_data.pop('ask_support', False):

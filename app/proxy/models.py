@@ -6,6 +6,7 @@ from django.db.models.signals import  post_save
 from django.dispatch import receiver
 import redis
 import json
+import time
 from abridge_bot.settings import REDIS_URL, PERSENT
 from proxy.dispatcher import (
     proxy_connector,
@@ -77,11 +78,14 @@ class ProxyOrder(CreateUpdateTracker):
         keywords['proxy_auto_prolong'] = 'Да' if self.auto_prolong else 'Нет'
         return keywords
 
-    def set_keywords(self):
+    def set_keywords(self, **kwarks):
         r = redis.from_url(REDIS_URL)
         key = f'{self.user.user_id}_proxy_keywords'
         proxy_keywords = self.get_keywords()
+        ads = {ads[v]: [f'k'] for k, v in kwarks.items()}  
+        proxy_keywords = {**proxy_keywords, **ads}
         r.set(key, value=json.dumps(proxy_keywords, ensure_ascii=False))
+    
 
     @staticmethod
     def create_new_order(
@@ -122,23 +126,16 @@ class ProxyOrder(CreateUpdateTracker):
         return 'На акаунте нету денег'
     
     @staticmethod
-    def prolong_order(order_id):
+    def prolong_order(order_id, period):
         order = ProxyOrder.objects.get(pk=order_id)
-        
         proxies = order.proxy.all()
         count = proxies.count()
-        period = (order.date_end - order.created_at).days
-
-        price = proxy_connector.get_price(
-            period=period,
-            version=order.proxy_version, count=count
-        )['price']
-        accautn_balance = proxy_connector.get_status()['balance']
+        resp = proxy_connector.get_price(period=period, version=order.proxy_version, count=count)
+        accautn_balance, price = resp['balance'], resp['price']
 
         u = order.user
         price *= PERSENT
         if u.balance - price >= 0:
-
             if accautn_balance - price/PERSENT >= 0:
                 u.balance -= price; u.save()
                 admin_logs_message(
@@ -148,7 +145,8 @@ class ProxyOrder(CreateUpdateTracker):
                 proxy_ids = list(proxies.values_list('proxy_id', flat=True))
                 proxy_connector.prolong(period=period, ids=','.joint(proxy_ids))
                 order.date_end += timedelta(days=period); order.save()
-                return 'Прокси куплены', u.user_id
+                order.set_keywords()
+                return 'Прокси продлены', u.user_id
             else:
                 admin_logs_message(
                     balance_error, accautn_balance=accautn_balance, 
@@ -160,7 +158,32 @@ class ProxyOrder(CreateUpdateTracker):
         order.save()
         return 'Недостаточно средств', u.user_id
 
-   
+    @staticmethod
+    def check_order(order_id):
+        order = ProxyOrder.objects.get(pk=order_id)
+        proxys = order.proxy.all()
+        ans = ''
+        for p in proxys:
+            res = proxy_connector.check(ids=str(p.proxy_id))
+            status = 'OK 🟢' if res['proxy_status'] else 'Сlosed 🔴'
+            ans += f'{p} - {status}\n'
+            time.sleep(0.2)
+        order.set_keywords(proxy_check_result=ans)
+        return order.user.user_id
+    
+    @staticmethod
+    def change_order(order_id):
+        order = ProxyOrder.objects.get(pk=order_id)
+        proxy_ids = ','.join(list(order.proxy.all().values_list('proxy_id', flat=True)))
+        prtpy = 'socks' if order.proxy_type == 'HTTPs' else 'http'
+        res = proxy_connector.set_type(ids=proxy_ids, type=prtpy)
+        ans = 'Обнавлен 🟢' if res['status'] else 'Ошибка 🔴'
+        new_type = f'{prtpy.upper()}s' if prtpy[-1] == 'p' else f'{prtpy.upper()}5'
+        order.set_keywords(proxy_type_result=ans, new_ptype=new_type)
+        return order.user.user_id
+
+
+
 class Proxy(CreateUpdateTracker):
     order = models.ForeignKey(
         ProxyOrder,
