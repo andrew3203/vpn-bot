@@ -1,6 +1,7 @@
 import requests
 from abridge_bot.settings import PROXY_API_KEY, PERSENT
 import flag
+import time
 
 
 
@@ -29,8 +30,13 @@ class ProxyConnector(object):
     
     
     def __return_data(self, url: str) -> dict:
-        resp = requests.get(url)
-        return resp.json()
+        try:
+            resp = requests.get(url)
+            res = resp.json()
+        except Exception as e:
+            time.sleep(0.5)
+            res = resp.json()
+        return res
     
     
     def get_status(self) -> dict:
@@ -128,9 +134,10 @@ class ProxyConnector(object):
 proxy_connector = ProxyConnector(PROXY_API_KEY)
 
 __kwargs = {'period': 1, 'count': 1}
-ipv4_price = PERSENT*proxy_connector.get_price(version=4, **__kwargs)['price_single']
-ipv4_shared_price = PERSENT*proxy_connector.get_price(version=5, **__kwargs)['price_single']
-ipv6_price = PERSENT*proxy_connector.get_price(version=6, **__kwargs)['price_single']
+
+ipv4_price = PERSENT * 33 # proxy_connector.get_price(version=4, period=1, count=1)['price_single']
+ipv4_shared_price = PERSENT * 1.2 #proxy_connector.get_price(version=5, period=1, count=1)['price_single']
+ipv6_price = PERSENT * 11 #proxy_connector.get_price(version=6, period=1, count=1)['price_single']
 
 def get_markup_countries(version):
     countrys = proxy_connector.get_country(version=version)
