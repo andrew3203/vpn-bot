@@ -1,19 +1,20 @@
 """
     Celery tasks. Some of them will be launched periodically from admin panel via django-celery-beat
 """
-from abridge_bot.settings import REDIS_URL, PROGREV_NAMES
-import redis
 import time
 from typing import Union, List, Optional, Dict
-
 import telegram
+import redis
+from django.db.models import F
+from celery.utils.log import get_task_logger
+from abridge_bot.celery import app
+from abridge_bot.settings import REDIS_URL, PROGREV_NAMES
 from bot.handlers.utils import utils
 from bot import models
-from abridge_bot.celery import app
-from celery.utils.log import get_task_logger
-from bot.handlers.broadcast_message.utils import _send_message, _from_celery_entities_to_entities, \
+from bot.handlers.broadcast_message.utils import (
+    _send_message, _from_celery_entities_to_entities, 
     _from_celery_markup_to_markup
-from bot.models import User
+)
 
 logger = get_task_logger(__name__)
 
@@ -39,6 +40,7 @@ def broadcast_message(
                 text=text,
                 entities=entities_,
                 reply_markup=reply_markup_,
+                parse_mode=parse_mode
             )
             logger.info(f"Broadcast message was sent to {user_id}")
         except Exception as e:
@@ -51,29 +53,30 @@ def broadcast_message(
 def broadcast_message2(
     users: List[Union[str, int]],
     message_id: str,
-    sleep_between: float = 0.2,
+    sleep_between: float = 0.3,
 ) -> None:
     logger.info(f"- - - - - Going to send {len(users)} messages - - - - -")
 
+    sent_am = 0
     for user_id  in users:
         next_state, prev_message_id = models.User.get_broadcast_next_states(user_id, message_id)
-        utils.send_broadcast_message(
+        prev = utils.send_broadcast_message(
             next_state=next_state,
             user_id=user_id,
             prev_message_id=prev_message_id
         )
-        User.unset_prew_message_id(user_id)
+        sent_am = sent_am + 1 if prev else sent_am
+        models.User.unset_prew_message_id(user_id)
         logger.info(f"Sent message to {user_id}!")
         time.sleep(max(sleep_between, 0.1))
 
     logger.info("Broadcast finished!")
+    list_am = len(users); block = list_am - sent_am
+    utils.admin_logs_message(f'<b>Рассылка на {sent_am}/{list_am} завершена!</b>\nВ блоке {block} клиентов.')
 
 @app.task(ignore_result=True)
 def update_photo(queue):
     r = redis.from_url(REDIS_URL)
-    #for file_id, path in queue:
-        #pass
-        #File.objects.filter(file__path=path).update(tg_id=file_id)
     cash = models.Message.make_cashes()
     r.mset(cash)
     print('set_messages_states')
@@ -81,7 +84,7 @@ def update_photo(queue):
 
 @app.task(ignore_result=True)
 def send_delay_message(user_id, msg_name):
-    prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_name)
+    prev_state, next_state, prev_message_id = models.User.get_prev_next_states(user_id, msg_name)
 
     prev_msg_id = utils.send_message(
         prev_state=prev_state,
@@ -90,17 +93,26 @@ def send_delay_message(user_id, msg_name):
         context=None,
         prev_message_id=prev_message_id
     )
-    User.set_message_id(user_id, prev_msg_id)
+    models.User.set_message_id(user_id, prev_msg_id)
 
 @app.task(ignore_result=True)
 def check_deep_link(user_id, deep_link):
-    user_ids = list(User.objects.all().values_list('user_id', flat=True))
+    user_ids = list(models.User.objects.all().values_list('user_id', flat=True))
     msg_dict = dict(PROGREV_NAMES)
     if deep_link not in user_ids:
-        User.objects.filter(user_id=user_id).update(deep_link=None)
+        models.User.objects.filter(user_id=user_id).update(deep_link=None)
         send_delay_message.delay(user_id, msg_name=msg_dict['user_invalid_deep_link'])
         return False
     else:
         send_delay_message.delay(deep_link, msg_name=msg_dict['user_valid_deep_link'])
         send_delay_message.delay(user_id, msg_name=msg_dict['deep_valid_deep_link'])
         return True
+
+
+@app.task(ignore_result=True)
+def update_message_countors(message_id, user_id):
+    count = models.Message.count_unique_users(message_id, user_id)
+    models.Message.objects.filter(id=message_id).update(
+        clicks=F('clicks') + 1,
+        unique_clicks=count
+    )

@@ -25,6 +25,7 @@ django-cleanup
 # Prepocessing
 cyrtranslit
 emoji
+emoji-country-flag
 flashtext
 
 # Server

@@ -49,13 +49,13 @@ class TariffAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Основное', {
             'fields': (
-                ("name",),
+                ("name", 'tariff_key'),
                 ("traffic_lim", 'price'),
                 ('period', 'peers_lim'),
             ),
         }),
     )
-
+    prepopulated_fields = {'tariff_key': ('name',)}
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):

@@ -24,12 +24,34 @@ services:
       - POSTGRES_PASSWORD=vpn_bot_password
       - POSTGRES_DB=vpn_bot_db
 
-
   vpn_bot_redis:
     image: redis:alpine
     container_name: vpn_bot_redis
     volumes:
       - ./redis_data:/data
+  
+  #vpn_bot_celery:
+  #  build:
+  #    context: ./app
+  #  container_name: vpn_bot_celery
+  #  command: celery -A abridge_bot worker --loglevel=INFO
+  #  env_file:
+  #    - ./.env.dev
+  #  depends_on:
+  #    - vpn_bot_redis
+  #    - vpn_bot_web
+      
+  #vpn_bot_celery-beat:
+  #  build:
+  #    context: ./app
+  #  container_name: vpn_bot_beat
+  #  command: celery -A abridge_bot beat -l info --scheduler django_celery_beat.schedulers.DatabaseScheduler
+  #  env_file:
+  #    - ./.env.dev
+  #  depends_on:
+  #    - vpn_bot_redis
+  #   - vpn_bot_celery
+  #    - vpn_bot_web
   
   vpn_bot:
     build:

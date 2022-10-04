@@ -4,7 +4,7 @@ import telegram
 from telegram import MessageEntity, InlineKeyboardButton, InlineKeyboardMarkup
 
 from abridge_bot.settings import TELEGRAM_TOKEN
-from bot.models import User
+from bot import models
 
 
 def _from_celery_markup_to_markup(celery_markup: Optional[List[List[Dict]]]) -> Optional[InlineKeyboardMarkup]:
@@ -77,15 +77,15 @@ def _send_message(
         
     except telegram.error.Unauthorized:
         print(f"Can't send message to {user_id}. Reason: Bot was stopped.")
-        User.objects.filter(user_id=user_id).update(is_blocked_bot=True)
-        return 20
+        models.User.objects.filter(user_id=user_id).update(is_blocked_bot=True)
+        return None
 
     except Exception as e:
         print(e)
-        return 20
+        return 1
 
     else:
-        User.objects.filter(user_id=user_id).update(is_blocked_bot=False)
+        models.User.objects.filter(user_id=user_id).update(is_blocked_bot=False)
         return m.message_id
    
 

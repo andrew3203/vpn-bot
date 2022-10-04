@@ -65,7 +65,7 @@ def recive_command(update: Update, context: CallbackContext) -> None:
 def _forward_to_support(update: Update, context: CallbackContext) -> None:
     u = User.get_user(update, context)
     li = f'<a href="https://bridge-vpn.store/admin/bot/user/{u.user_id}/change/">' \
-        f'{u.first_name} {u.last_name} ({u.user_id})</a>\n' \
+        f'{u.first_name} ({u.user_id})</a>\n' \
         f'{u.balance}\n{u.cashback_balance}'
 
     text = f"{update.message.text}\n\n{li}"
@@ -78,7 +78,7 @@ def _forward_to_support(update: Update, context: CallbackContext) -> None:
 
 
 def recive_message(update: Update, context: CallbackContext) -> None:
-    if context.user_data.pop('ask_support', False):
+    if context.user_data and context.user_data.pop('ask_support', False):
         _forward_to_support(update, context)
         msg_text = 'Отправил вопрос в поддержку'
     else:

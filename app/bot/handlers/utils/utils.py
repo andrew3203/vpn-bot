@@ -1,8 +1,7 @@
-from bot.models import MessageType
+from bot import models
 from abridge_bot.settings import TELEGRAM_LOGS_CHAT_ID
 
 from flashtext import KeywordProcessor
-from django.utils import timezone
 from bot.handlers.broadcast_message.utils import _send_message, _send_media_group, _revoke_message
 from telegram import (
     InlineKeyboardButton,
@@ -10,7 +9,6 @@ from telegram import (
     KeyboardButton,
     ReplyKeyboardMarkup,
 )
-import requests
 
 
 def get_inline_marckup(markup):
@@ -88,13 +86,13 @@ def send_message(prev_state, next_state, context, user_id, prev_message_id):
         photo = None
     
 
-    if prev_message_id and prev_message_id != '' and prev_msg_type != MessageType.POLL:
+    if prev_message_id and prev_message_id != '' and prev_msg_type != models.MessageType.POLL:
         _revoke_message(
             user_id=user_id,
             message_id=prev_message_id
         )
     
-    if next_msg_type == MessageType.POLL:
+    if next_msg_type == models.MessageType.POLL:
         send_poll(
             user_id, 
             poll_id=next_state['poll_id'], 
@@ -105,10 +103,10 @@ def send_message(prev_state, next_state, context, user_id, prev_message_id):
         message_id = ''
 
     else:
-        if next_msg_type == MessageType.KEYBOORD_BTN:
+        if next_msg_type == models.MessageType.KEYBOORD_BTN:
             reply_markup = get_keyboard_marckup(markup)
 
-        elif next_msg_type == MessageType.FLY_BTN:
+        elif next_msg_type == models.MessageType.FLY_BTN:
             reply_markup = get_inline_marckup(markup)
 
         else:
@@ -124,38 +122,24 @@ def send_message(prev_state, next_state, context, user_id, prev_message_id):
     return message_id
 
 
-def send_registration(user_id, user_code):
-    requests.post(
-        url='https://crm.abridge_bot.ru/api/telegram/sign-up', 
-        data = {'tg_user_id': user_id, 'bd_user_id': user_code }
-    )
-
-
-def get_user_info(user_id, user_code):
-    resp = requests.get(
-        url=f'https://crm.abridge_bot.ru/api/telegram/get-user-info?id={user_id}'
-    )
-    return resp.json()
-
-
 def send_broadcast_message(next_state, user_id, prev_message_id):
     next_msg_type = next_state["message_type"]
 
     markup = next_state["markup"]
     message_text = get_message_text(next_state["text"], next_state['user_keywords'])
 
-    if prev_message_id and prev_message_id != '' and prev_message_id != MessageType.POLL:
+    if prev_message_id and prev_message_id != '' and prev_message_id != models.MessageType.POLL:
         _revoke_message(
             user_id=user_id,
             message_id=prev_message_id
         )
 
-    if next_msg_type == MessageType.POLL:
+    if next_msg_type == models.MessageType.POLL:
         send_poll(text='Опрос', markup=markup)
         reply_markup = None
-    elif next_msg_type == MessageType.KEYBOORD_BTN:
+    elif next_msg_type == models.MessageType.KEYBOORD_BTN:
         reply_markup = get_keyboard_marckup(markup)
-    elif next_msg_type == MessageType.FLY_BTN:
+    elif next_msg_type == models.MessageType.FLY_BTN:
         reply_markup = get_inline_marckup(markup)
     else:
         reply_markup = None
@@ -173,25 +157,19 @@ def send_broadcast_message(next_state, user_id, prev_message_id):
 
 
 def send_logs_message(msg_text, user_keywords, prev_state):
-    markup = prev_state.get('markup', []) if prev_state else []
     try:
+        markup = prev_state['markup']
         decoder = dict([(k[0][0].replace(' ', '').lower(), k[0][0]) for k in markup])
         msg_text = decoder.get(msg_text, msg_text)
     except Exception as e:
         msg_text = msg_text
 
-    text = f'{msg_text}' + \
-        '\n\n' \
-        '<b>first_name last_name</b> (user_id)\n' 
+    text = f'{msg_text}\n\n<b>first_name</b> (user_id)' 
     try:
-        message_text = get_message_text(text, user_keywords)
-    except:
-        message_text = f'{msg_text}' + \
-        '\n\n' \
-        f'<b>{user_keywords.get("first_name", "Noname")} {user_keywords.get("last_name", "Noname")}</b> ({user_keywords.get("user_id", "Noname")})\n' \
-
-
-    _send_message(user_id=TELEGRAM_LOGS_CHAT_ID, text=message_text)
+        text = get_message_text(text, user_keywords)
+    except Exception as e:
+        text = f'{msg_text}\n\n<b>first_name</b> (user_id)' 
+    _send_message(user_id=TELEGRAM_LOGS_CHAT_ID, text=text)
 
 
 def admin_logs_message(msg_text, **kwargs):

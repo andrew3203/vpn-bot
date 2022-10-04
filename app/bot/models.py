@@ -2,26 +2,25 @@ from __future__ import annotations
 from random import randint
 import cyrtranslit
 import emoji
-from django.db.models import F
-
 from typing import Union, Optional, Tuple
 import re
 import json
-from datetime import datetime, timedelta
-
-from django.db import models
-from django.db.models import QuerySet, Manager
+import redis
+from datetime import  timedelta
 from telegram import Update
 from telegram.ext import CallbackContext
-
-from abridge_bot.settings import MSG_PRIMARY_NAMES, REDIS_URL
-from abridge_bot.settings import DEEP_CASHBACK_PERCENT, USER_CASHBACK_PERCENT
-from bot.handlers.utils.info import extract_user_data_from_update
-from utils.models import CreateUpdateTracker, CreateTracker, nb, GetOrNoneManager
-
-from django.db.models.signals import post_delete, post_save, pre_save
+from django.db import models
+from django.db.models import QuerySet, Manager
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
-import redis
+from abridge_bot.settings import (
+    MSG_PRIMARY_NAMES, REDIS_URL,
+    DEEP_CASHBACK_PERCENT, USER_CASHBACK_PERCENT
+)
+from utils.models import CreateUpdateTracker, CreateTracker, nb, GetOrNoneManager
+from bot.tasks import update_message_countors
+from bot.handlers.utils.info import extract_user_data_from_update
+
 
 
 
@@ -105,9 +104,8 @@ class User(CreateUpdateTracker):
             self.cashback_balance: ['cashback_balance'],
             DEEP_CASHBACK_PERCENT * 100: ['DEEP_CASHBACK_PERCENT'],
             USER_CASHBACK_PERCENT * 100: ['USER_CASHBACK_PERCENT'],
+            '': coders
         }
-        if len(coders) > 0:
-            keywords[''] = coders
         return keywords
     
     def to_str(self):
@@ -145,34 +143,30 @@ class User(CreateUpdateTracker):
         return message_id
 
     @staticmethod
-    def get_prev_next_states(user_id, msg_text_key):
+    def get_prev_next_states(user_id, msg_text):
         r = redis.from_url(REDIS_URL, decode_responses=True)
-        msg_text_key = Message.encode_msg_name(msg_text_key)
+        enc_msg_text = Message.encode_msg_name(msg_text)
 
         if r.exists(user_id):
             message_id = json.loads(r.get(user_id))
             prev_state = json.loads(r.get(message_id))
-            next_state_id = prev_state['ways'].get(msg_text_key, r.get('error'))
+            next_state_id = prev_state['ways'].get(enc_msg_text, r.get('error'))
 
-            if not prev_state['need_routing']:
+            if prev_state['remember_answer']:
                 choices = r.get(f'{user_id}_choices')
                 choices = json.loads(choices) if choices else {}
-                choices[msg_text_key] = prev_state['msg_query']
+                choices[prev_state['msg_n_code']] = msg_text
                 r.set(f'{user_id}_choices', value=json.dumps(choices))
-
         else:
             prev_state = None
-            next_state_id = r.get('start')
-        
-        Message.objects.filter(id=next_state_id).update(clicks=F('clicks') + 1)
+            next_state_id = r.get(enc_msg_text) if r.get(enc_msg_text) else r.get('start')
 
-        raw = r.get(next_state_id)
-        next_state = json.loads(raw)
+        next_state = json.loads(r.get(next_state_id))
         next_state['user_keywords'] = User._load_keywords(r, user_id)
-        r.setex(user_id, timedelta(hours=35), value=next_state_id)
+        r.setex(user_id, timedelta(hours=72), value=next_state_id)
+        update_message_countors.delay(message_id=next_state_id, user_id=user_id)
 
         prev_message_id = r.get(f'{user_id}_prev_message_id')
-
         return prev_state, next_state, prev_message_id
     
     @staticmethod
@@ -188,19 +182,25 @@ class User(CreateUpdateTracker):
 
         else:
             # user did not use vpn befor
-            vpn_kw = r.get(f'default_vpn_keywords')
-
-       
+            vpn_kw = r.get(f'default_vpn_keywords') #TODO
+        vpn_kw = json.loads(vpn_kw) if vpn_kw else {}
 
         proxy_kw = r.get(f'{user_id}_proxy_keywords')
         proxy_kw = json.loads(proxy_kw) if proxy_kw else {}
 
         choices_kw = r.get(f'{user_id}_choices')
         choices_kw = json.loads(choices_kw) if choices_kw else {}
+        choices_kw = {v: [f'{k}'] for k, v in choices_kw.items()}
 
-        
-        keywords = {**user_kw, **vpn_kw, **proxy_kw}
-        return keywords
+        return {**user_kw, **vpn_kw, **proxy_kw, **choices_kw}
+    
+    @staticmethod
+    def pop_choices(user_id, *args):
+        r = redis.from_url(REDIS_URL, decode_responses=True)
+        choices_kw = r.get(f'{user_id}_choices')
+        choices_kw = json.loads(choices_kw) if choices_kw else {}
+        r.delete(f'{user_id}_choices')
+        return [choices_kw.get(key) for key in args]
         
     
     @staticmethod
@@ -325,21 +325,20 @@ class Message(CreateUpdateTracker):
         default=0,
         blank=True
     )
+    unique_clicks = models.IntegerField(
+        'Кол-во уникальных кликов',
+        default=0,
+        blank=True
+    )
     files = models.ManyToManyField(
         File,
         blank=True,
         verbose_name='Картинки, Видео, Файлы'
     )
-    need_routing = models.BooleanField(
-        'Роутинг',
-        help_text='Нужно ли искать сообщения, соответсвующие кнопкам. Используеться для создания интерактивных маршрутов.',
-        default=True, blank=True
-    )
-    message_code = models.CharField(
-        'Код сообщения',
-        max_length=80,
-        help_text='Если роутинг выключен, то по данному коду в следующих сообщениях можно вывести результат пользовательского ответа.',
-        default=None, null=True, blank=True
+    remember_answer = models.BooleanField(
+        'Запомнить ответ',
+        help_text='Запомомнить на какую кнопку нажал пользователь. Результат будет доступен в след сообщениях через keywords по названию сообщения.',
+        default=False, blank=True
     )
 
     class Meta:
@@ -362,6 +361,13 @@ class Message(CreateUpdateTracker):
         return messages
 
     def parse_message(self) -> dict:
+        def __parse_btn(btn: str) -> tuple:
+            regx1 = '\-\-[^-\[\]]+\-\-'
+            res = re.findall(regx1, btn)
+            btn = re.sub(regx1, '', btn).rstrip()
+            msg_n = re.sub('\-\-', '', res[0]) if len(res) == 1 else btn
+            return btn, msg_n
+
         msg_dict = self._gen_msg_dict()
         regex = r"(\[[^\[\]]+\]\([^\(\)]+\)\s*\n)|(\[[^\[\]]+\]\s*\n)|(\[[^\[\]]+\]\([^\(\)]+\))|(\[[^\[\]]+\])"
         # group 1 - элемент кнопки с сылкой (с \n)
@@ -375,17 +381,17 @@ class Message(CreateUpdateTracker):
         markup = [[]]
         ways = {}
         end_text = 100000
-        lbtnq_id = -1; 
         for match in matches:
             group = match.group()
             end_text = min(end_text, match.start())
             groupNum = 1 + list(match.groups()).index(group)
             if groupNum in (1, 3):
                 btn, link = group.split('](')
-                btn = btn[1:]
+                btn, msg_n = __parse_btn(btn[1:])
                 link = re.sub('(\)\s*)|([\)\n])', '', link)
             else:
                 btn = re.sub('(\]\s*)|([\[\]\n])', '', group)
+                btn, msg_n = __parse_btn(btn)
                 link = None
 
             markup[-1].append((btn, link))
@@ -393,22 +399,17 @@ class Message(CreateUpdateTracker):
                 markup.append([])
 
             if groupNum in (2, 4):
-                btnq_n = self.encode_msg_name(btn)
-                lbtnq_id = msg_dict[btnq_n] if self.need_routing else msg_dict.get(btnq_n, lbtnq_id)
-                ways[btnq_n] = lbtnq_id
-
-        if not self.need_routing:
-            assert lbtnq_id > -1, 'You wrote incorrect message names'
-            for k in ways.keys():
-                ways[k] = lbtnq_id
+                msg_n_code = self.encode_msg_name(msg_n)
+                btn_code = self.encode_msg_name(btn)
+                ways[btn_code] = msg_dict[msg_n_code]
 
         res = {
             'message_type': self.message_type,
             'text': self.text[:end_text],
             'markup': markup,
             'ways': ways,
-            'need_routing': self.need_routing,
-            'msg_query': self.message_code if self.message_code else self.encode_msg_name(self.name)
+            'remember_answer': self.remember_answer,
+            'msg_n_code': self.encode_msg_name(self.name)
         }
         if self.message_type == MessageType.POLL:
             poll = Poll.objects.filter(message=self).first()
@@ -431,14 +432,9 @@ class Message(CreateUpdateTracker):
         cash['error'] = common_ways.pop('error')
 
         data = self.parse_message()
-        cash[self.id] = json.dumps({
-            'poll_id': data.get('poll_id', ''),
-            'text': data['text'],
-            'ways': {**common_ways, **data['ways']},
-            'markup': data['markup'] if data['markup'] else '',
-            'message_type': data['message_type'],
-            'photos': [f.file.path for f in self.files.all()]
-        }, ensure_ascii=False)
+        data['ways'] = {**common_ways, **data['ways']}
+        data['photos'] = [f.file.path for f in self.files.all()]
+        cash[self.pk] = json.dumps(data, ensure_ascii=False)
         return cash
 
     @staticmethod
@@ -454,16 +450,23 @@ class Message(CreateUpdateTracker):
 
         for m in Message.objects.all():
             data = m.parse_message()
-            cash[m.id] = json.dumps({
-                'poll_id': data.get('poll_id', ''),
-                'text': data['text'],
-                'ways': {**common_ways, **data['ways']},
-                'markup': data['markup'],
-                'message_type': data['message_type'],
-                'photos': [f.file.path for f in m.files.all()]
-            }, ensure_ascii=False)
+            data['ways'] = {**common_ways, **data['ways']}
+            data['photos'] = [f.file.path for f in m.files.all()]
+            cash[m.pk] = json.dumps(data, ensure_ascii=False)
 
         return cash
+    
+    @staticmethod
+    def count_unique_users(message_id, user_id):
+        r = redis.from_url(REDIS_URL, decode_responses=True)
+        stack = r.get(f'{message_id}_users_stack')
+        stack = json.loands(stack) if stack else []
+        stack.append(user_id)
+        stack = list(set(stack))
+        r.set('{message_id}_users_stack', json.dumps(stack))
+        return len(stack)
+
+
 
 
 class Poll(CreateUpdateTracker):

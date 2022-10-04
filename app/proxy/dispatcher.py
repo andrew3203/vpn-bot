@@ -1,5 +1,6 @@
 import requests
-from abridge_bot.settings import PROXY_API_KEY
+from abridge_bot.settings import PROXY_API_KEY, PERSENT
+import flag
 
 
 
@@ -122,6 +123,26 @@ class ProxyConnector(object):
         return self.__return_data(url)
 
         
-        
+
      
 proxy_connector = ProxyConnector(PROXY_API_KEY)
+
+__kwargs = {'period': 1, 'count': 1}
+ipv4_price = PERSENT*proxy_connector.get_price(version=4, **__kwargs)['price_single']
+ipv4_shared_price = PERSENT*proxy_connector.get_price(version=5, **__kwargs)['price_single']
+ipv6_price = PERSENT*proxy_connector.get_price(version=6, **__kwargs)['price_single']
+
+def get_markup_countries(version):
+    countrys = proxy_connector.get_country(version=version)
+    markup = []
+    i = 0
+    
+    for c in countrys['list']:
+        if i % 4 == 0:
+            f = flag.flag(c)
+            markup.append([])
+        c = c.upper()
+        btn = f"{flag.flag(c)} {c}"
+        markup[-1].append((btn,None))
+        i +=1
+    return markup

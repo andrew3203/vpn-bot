@@ -115,7 +115,7 @@ class UserAdmin(admin.ModelAdmin):
 @admin.register(models.Message)
 class MessageAdmin(admin.ModelAdmin):
     list_display = [
-        'name', 'pk', 'message_type', 'clicks', 'updated_at', 'created_at'
+        'name', 'pk', 'message_type', 'clicks', 'unique_clicks', 'updated_at', 'created_at'
     ]
     list_filter = ["message_type", ]
     search_fields = ('name', )
@@ -125,18 +125,17 @@ class MessageAdmin(admin.ModelAdmin):
                 ("name", 'pk'),
                 ('text',),
                 ('message_type',),
-                ('clicks',)
+                ('clicks','unique_clicks')
+            ),
+        }),
+        ('Дополнительно', {
+            'fields': (
+                ("remember_answer",),
             ),
         }),
         ('Медия', {
             'fields': (
                 ("files",),
-            ),
-        }),
-        ('Дополнительно', {
-            'fields': (
-                ("need_routing",),
-                ("message_code",),
             ),
         }),
         ('Важные даты', {
@@ -148,7 +147,6 @@ class MessageAdmin(admin.ModelAdmin):
     )
     readonly_fields = ('created_at', 'updated_at', 'pk')
     filter_horizontal = ('files',)
-    prepopulated_fields = {'message_code': ('name',)}
 
     def set_zeros(self, request, queryset):
         queryset.update(clicks=0)

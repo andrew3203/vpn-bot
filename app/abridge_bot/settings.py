@@ -224,6 +224,9 @@ AVAILABLE_GBs = {
     5: 349
 }
 
+#PROXY Commision
+PERSENT = 1.20
+
 # PROXY API
 PROXY_API_KEY = os.environ.get("PROXY_API_KEY")
 

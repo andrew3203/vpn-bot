@@ -6,8 +6,11 @@ from django.db.models.signals import  post_save
 from django.dispatch import receiver
 import redis
 import json
-from abridge_bot.settings import REDIS_URL
-from proxy.dispatcher import proxy_connector
+from abridge_bot.settings import REDIS_URL, PERSENT
+from proxy.dispatcher import (
+    proxy_connector,
+    ipv4_price, ipv6_price, ipv4_shared_price
+)
 from bot.handlers.utils.utils import admin_logs_message
 from bot.handlers.admin.static_text import proxy_balance, balance_error
 from proxy.tasks import deactivate_order, run_auto_prolong_task
@@ -20,6 +23,9 @@ class ProxyOrder(CreateUpdateTracker):
         User,
         verbose_name='Владалец',
         on_delete=models.SET_NULL, null=True
+    )
+    price = models.FloatField(
+        'Цена',
     )
     date_end = models.DateTimeField(
         'Время окончания'
@@ -60,6 +66,9 @@ class ProxyOrder(CreateUpdateTracker):
         keywords = {}
         all_proxy = Proxy.objects.filter(order=self)
         proxy_list = '\n'.join([f'<code>{p}</code>' for p in all_proxy])
+        keywords['ipv4_price'] = ipv4_price * PERSENT
+        keywords['ipv6_price'] = ipv6_price * PERSENT
+        keywords['ipv4_shared_price'] = ipv4_shared_price * PERSENT
         keywords['proxy_list'] = proxy_list
         keywords['proxy_date_end'] = self.date_end
         keywords['proxy_version'] = f'IPv{self.proxy_version}'
@@ -85,6 +94,7 @@ class ProxyOrder(CreateUpdateTracker):
 
         if accautn_balance - price >= 0:
             u = User.objects.get(user_id=user_id)
+            price *= PERSENT
             if u.balance - price >= 0:
                 u.balance -= price; u.save()
                 admin_logs_message(
@@ -96,7 +106,7 @@ class ProxyOrder(CreateUpdateTracker):
                 )['list'].values()
                 order = ProxyOrder.objects.create(
                     user=u, date_end=datetime.strptime(proxy_list[0]['date_end'], "%Y-%m-%d H:M:S") ,
-                    proxy_version=version, proxy_type=ptype, proxy_country=country
+                    proxy_version=version, proxy_type=ptype, proxy_country=country, price=price
                 )
                 for p in proxy_list:
                     new_proxy = Proxy.objects.create(
@@ -126,9 +136,10 @@ class ProxyOrder(CreateUpdateTracker):
         accautn_balance = proxy_connector.get_status()['balance']
 
         u = order.user
+        price *= PERSENT
         if u.balance - price >= 0:
 
-            if accautn_balance - price >= 0:
+            if accautn_balance - price/PERSENT >= 0:
                 u.balance -= price; u.save()
                 admin_logs_message(
                     proxy_balance, accautn_balance=accautn_balance, 

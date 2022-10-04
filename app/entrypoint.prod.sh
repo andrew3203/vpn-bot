@@ -10,5 +10,5 @@ then
 
     echo "PostgreSQL started"
 fi
-
+python manage.py migrate
 exec "$@"
