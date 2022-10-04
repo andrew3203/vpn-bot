@@ -1,7 +1,7 @@
 from abridge_bot.celery import app
 from celery.utils.log import get_task_logger
 from bot.tasks import send_delay_message
-from vpn.models import VpnServer, Order
+from vpn.models import VpnServer, VpnOrder
 from celery import group
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
 
@@ -17,9 +17,9 @@ def _update_traffic_task(server_id):
 
 @app.task(ignore_result=True)
 def _check_traffic_task(order_id):
-    order = Order.objects.get(pk=order_id)
+    order = VpnOrder.objects.get(pk=order_id)
     msg_name = order.check_traffic()
-    logger.info(f'Order {order} to was checked')
+    logger.info(f'VpnOrder {order} to was checked')
     if msg_name:
         send_delay_message.delay(user_id=order.user.user_id, msg_name=msg_name)
         logger.info(f'Sent message {msg_name} to {order.user.user_id}')
@@ -32,7 +32,7 @@ def get_updates():
     if len(tasks) > 0:
         group(tasks)()
 
-    order_ids = Order.objects.filter(active=True).values_list('pk', flat=True)
+    order_ids = VpnOrder.objects.filter(active=True).values_list('pk', flat=True)
     tasks1 = [_check_traffic_task.s(o_id) for o_id in order_ids]
     if len(tasks1) > 0:
         group(tasks1)()

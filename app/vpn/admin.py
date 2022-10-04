@@ -1,5 +1,5 @@
 from django.contrib import admin
-from vpn.models import VpnServer, Peer, Tariff, Order
+from vpn.models import VpnServer, Peer, Tariff, VpnOrder
 
 
 @admin.register(VpnServer)
@@ -49,15 +49,14 @@ class TariffAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Основное', {
             'fields': (
-                ("name", 'tariff_key'),
+                ("name",),
                 ("traffic_lim", 'price'),
                 ('period', 'peers_lim'),
             ),
         }),
     )
-    prepopulated_fields = {'tariff_key': ('name',)}
 
-@admin.register(Order)
+@admin.register(VpnOrder)
 class OrderAdmin(admin.ModelAdmin):
     list_display = [
         'user', 'tariff', 'active'

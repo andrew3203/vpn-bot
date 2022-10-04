@@ -1,5 +1,6 @@
-from pyparsing import Or
-from abridge_bot.settings import VPN_MSG_NAMES, AVAILABLE_GBs
+import json
+import redis
+from abridge_bot.settings import VPN_MSG_NAMES, AVAILABLE_GBs, REDIS_URL
 from django.db import models
 from bot.models import User
 from utils.models import CreateTracker
@@ -113,11 +114,8 @@ class Peer(CreateTracker):
 class Tariff(models.Model):
     name = models.CharField(
         'Название',
-        max_length=200
-    )
-    tariff_key = models.CharField(
-        'Ключ тарифа',
-        max_length=200
+        max_length=200,
+        primary_key=True
     )
     traffic_lim = models.FloatField(
         'Кол-во гб',
@@ -145,7 +143,7 @@ class Tariff(models.Model):
         return f'{self.name}'
 
 
-class Order(CreateTracker):
+class VpnOrder(CreateTracker):
     user = models.OneToOneField(
         User,
         verbose_name='Владалец',
@@ -180,7 +178,16 @@ class Order(CreateTracker):
 
     def __str__(self):
         return f'{self.user} - {self.tariff}'
-
+    
+    def set_user_info(self) -> str:
+        r = redis.from_url(REDIS_URL)
+        user_id = self.user.user_id
+        data = {
+            'tariff_name': self.tariff.name,
+            'country': self.peers.first().server.country
+        }
+        r.set(f'{user_id}_vpn_data', json.dumps(data))
+            
     def check_traffic(self) -> str:
         traffic = 0
         msg_dict = dict(VPN_MSG_NAMES)
@@ -215,7 +222,7 @@ class Order(CreateTracker):
     @staticmethod
     def add_traffic(user_id: int, gb_amount: int):
         user = User.objects.get(user_id=user_id)
-        order = Order.objects.filter(user=user).first()
+        order = VpnOrder.objects.filter(user=user).first()
         msg_dict = dict(VPN_MSG_NAMES)
         if order is None:
             return msg_dict['have_no_orders']
@@ -239,39 +246,38 @@ class Order(CreateTracker):
             return 'Покупка ГБ успешна 1'
 
     @staticmethod
-    def create_or_change(user_id: int, new_tariff_name: int, country: str):
-
+    def create_or_change(user_id: int, tariff_name: str, country: str) -> tuple:
         user = User.objects.get(user_id=user_id)
-        new_tariff = Tariff.objects.filter(name=new_tariff_name).first()
+        tariff = Tariff.objects.filter(name=tariff_name).first()
 
-        if user.balance - new_tariff.price >= 0:
+        prev_order = VpnOrder.objects.filter(user__user_id=user_id).first()
+        if prev_order:
+            if prev_order.tariff == tariff:
+                msg_text = 'У вас прежний тариф'
+                return prev_order, msg_text
+            prev_order.tariff = tariff
+            order.set_user_info()
+            prev_order.save()
+            msg_text = 'Тариф изменен'
+            return prev_order, msg_text
+        elif user.balance - tariff.price < 0:
+            msg_text = 'Не хватает средств'
+            return None, msg_text
 
-            user.balance -= new_tariff.price
-            user.save()
-
-            prev_order = Order.objects.filter(user__user_id=user_id).first()
-            if prev_order:
-                if prev_order.tariff == new_tariff:
-                    return prev_order, False, False
-                else:
-                    prev_order.tariff = new_tariff
-                    prev_order.save()
-                return prev_order, False, True
-            else:
-                # TODO потом их будет больше, надо балансировать нагрузку будет
-                server = VpnServer.objects.filter(country=country).first()
-                peer = server.create_peer()
-                order = Order.objects.create(user=user, tariff=new_tariff)
-                order.save()
-                order.peers.add(peer)
-                order.save()
-            return order, True, False
-
-        return None, False, False
+        user.balance -= tariff.price; user.save()
+        server = VpnServer.objects.filter(country=country).first()
+        peer = server.create_peer()
+        order = VpnOrder.objects.create(user=user, tariff=tariff)
+        order.save()
+        order.peers.add(peer)
+        order.save()
+        order.set_user_info()
+        msg_text = ''
+        return order, msg_text
 
     @staticmethod
     def change_peer_of_order(user_id: int, country: str):
-        order = Order.objects.get(user__user_id=user_id)
+        order = VpnOrder.objects.get(user__user_id=user_id)
         # TODO потом их будет больше, надо балансировать нагрузку будет
         server = VpnServer.objects.filter(country=country).first()
         for peer in order.peers.all():
@@ -282,15 +288,27 @@ class Order(CreateTracker):
 
     @staticmethod
     def add_peer_to_order(user_id: int, country: str):
-        order = Order.objects.get(user__user_id=user_id)
+        order = VpnOrder.objects.get(user__user_id=user_id)
         # TODO потом их будет больше, надо балансировать нагрузку будет
         server = VpnServer.objects.filter(country=country).first()
         peer = server.create_peer()
         order.peers.add(peer)
         order.save()
+    
+    @staticmethod
+    def get_user_info(user_id: int) -> str:
+        r = redis.from_url(REDIS_URL, decode_responses=True)
+        data = r.get(f'{user_id}_vpn_data')
+        if data:
+             data = json.loads(data)
+        else:
+            data = {'tariff_name': 'Пробный', 'country': 'DE'}
+            
+        return data
 
 
-@receiver(post_save, sender=Order)
+
+@receiver(post_save, sender=VpnOrder)
 def remove_user_states(sender, instance, **kwargs):
     if instance.active == False:
         for peer in instance.peers.all():

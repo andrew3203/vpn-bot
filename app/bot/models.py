@@ -173,18 +173,6 @@ class User(CreateUpdateTracker):
     def _load_keywords(r, user_id):
         user_kw = json.loads(r.get(f'{user_id}_keywords'))
 
-        vpn_status = r.get(f'{user_id}_vpn_status') 
-        if vpn_status in ['unlimited', 'base']:
-            vpn_kw = r.get(f'{user_id}_vpn_keywords')
-
-        elif vpn_status == 'test':
-            vpn_kw = r.get(f'{user_id}_test_vpn_keywords')
-
-        else:
-            # user did not use vpn befor
-            vpn_kw = r.get(f'default_vpn_keywords') #TODO
-        vpn_kw = json.loads(vpn_kw) if vpn_kw else {}
-
         proxy_kw = r.get(f'{user_id}_proxy_keywords')
         proxy_kw = json.loads(proxy_kw) if proxy_kw else {}
 
@@ -192,7 +180,7 @@ class User(CreateUpdateTracker):
         choices_kw = json.loads(choices_kw) if choices_kw else {}
         choices_kw = {v: [f'{k}'] for k, v in choices_kw.items()}
 
-        return {**user_kw, **vpn_kw, **proxy_kw, **choices_kw}
+        return {**user_kw, **proxy_kw, **choices_kw}
     
     @staticmethod
     def pop_choices(user_id, *args):
@@ -307,7 +295,8 @@ class MessageType(models.TextChoices):
 class Message(CreateUpdateTracker):
     name = models.CharField(
         'Название',
-        max_length=40,
+        max_length=120,
+        primary_key=True
     )
     text = models.TextField(
         'Текст',
