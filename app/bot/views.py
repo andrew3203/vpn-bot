@@ -9,10 +9,6 @@ from bot.dispatcher import process_telegram_event
 logger = logging.getLogger(__name__)
 
 
-def index(request):
-    return JsonResponse({"error": "sup hacker"})
-
-
 class TelegramBotWebhookView(View):
     # WARNING: if fail - Telegram webhook will be delivered again. 
     # Can be fixed with async celery task execution

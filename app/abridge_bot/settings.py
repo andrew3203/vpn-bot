@@ -52,8 +52,7 @@ INSTALLED_APPS = [
     'payment.apps.PaymentConfig',
     'proxy.apps.ProxyConfig',
     'vpn.apps.VPNConfig',
-
-    
+    'zlending.apps.ZLendingConfig',
 ]
 
 MIDDLEWARE = [
