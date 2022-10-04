@@ -132,14 +132,23 @@ def prolong_command(update: Update, context: CallbackContext) -> None:
     user_id = extract_user_data_from_update(update)["user_id"]
     order_ids = re.findall('\d+', update.message.text)
     if len(order_ids) > 1:
-        period = int(order_ids.pop(-1))
-        tasks.prolong_orders_task.delay(order_ids, period)
-        msg_text = 'Запрос отправлен'
+        context.user_data['period'] = int(order_ids.pop(-1))
+        context.user_data['order_ids'] = order_ids
+        msg_text = 'Запрос продлить прокси'
     else:
         msg_text = 'Ошибка ввода'
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
     _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
 
+
+def prolong_command_run(update: Update, context: CallbackContext) -> None:
+    user_id = extract_user_data_from_update(update)["user_id"]
+    period = context.user_data.pop('period')
+    order_ids = context.user_data.pop('order_ids')
+    tasks.prolong_orders_task.delay(order_ids, period)
+    msg_text = 'Запрос отправлен'
+    prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
+    _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
 
 
 def check_command(update: Update, context: CallbackContext) -> None:

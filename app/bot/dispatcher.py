@@ -26,9 +26,6 @@ from bot.handlers.action import handlers as action_handlers
 
 
 def setup_dispatcher(dp):
-    """
-    Adding handlers for events from Telegram
-    """
     # onboarding
     dp.add_handler(CommandHandler("start", chat.command_start))
     dp.add_handler(CommandHandler("account", chat.command_account))
@@ -41,7 +38,9 @@ def setup_dispatcher(dp):
     # forward user question to support chat
     dp.add_handler(CommandHandler("support", chat.command_support))
 
+    # proxy manegment commands
     dp.add_handler(MessageHandler(Filters.regex(r'^/prolong(/s)?.*'), action_handlers.prolong_command))
+    dp.add_handler(CallbackQueryHandler(action_handlers.prolong_command_run, pattern=r'^запроспродлитьпрокси$'))
     dp.add_handler(MessageHandler(Filters.regex(r'^/check(/s)?.*'), action_handlers.check_command))
     dp.add_handler(MessageHandler(Filters.regex(r'^/change(/s)?.*'), action_handlers.change_command))
 
@@ -57,7 +56,7 @@ def setup_dispatcher(dp):
     dp.add_handler(CallbackQueryHandler(action_handlers.show_countrys, pattern=r'^выбратьстранупрокси$'))
 
     # payment action messages
-    dp.add_handler(CallbackQueryHandler(callback=action_handlers.topup, pattern=r'^\d+₽$'))
+    dp.add_handler(CallbackQueryHandler(callback=action_handlers.topup, pattern=r'(\d+\s₽)'))
 
     # recive all commands
     dp.add_handler(MessageHandler(Filters.command, chat.recive_command))
