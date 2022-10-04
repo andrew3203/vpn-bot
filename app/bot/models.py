@@ -296,7 +296,7 @@ class Message(CreateUpdateTracker):
     name = models.CharField(
         'Название',
         max_length=120,
-        primary_key=True
+        unique=True
     )
     text = models.TextField(
         'Текст',
@@ -345,7 +345,7 @@ class Message(CreateUpdateTracker):
 
     def _gen_msg_dict(self):
         messages = {}
-        for msg_name, msg_id in Message.objects.all().values_list('name', 'id'):
+        for msg_name, msg_id in Message.objects.all().values_list('name', 'pk'):
             messages[self.encode_msg_name(msg_name)] = msg_id
         return messages
 

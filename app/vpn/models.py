@@ -115,7 +115,7 @@ class Tariff(models.Model):
     name = models.CharField(
         'Название',
         max_length=200,
-        primary_key=True
+        unique=True
     )
     traffic_lim = models.FloatField(
         'Кол-во гб',
