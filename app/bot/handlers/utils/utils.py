@@ -2,7 +2,10 @@ from bot import models
 from abridge_bot.settings import TELEGRAM_LOGS_CHAT_ID
 
 from flashtext import KeywordProcessor
-from bot.handlers.broadcast_message.utils import _send_message, _send_media_group, _revoke_message
+from bot.handlers.broadcast_message.utils import (
+    _send_message, _send_media_group, _revoke_message,
+    _remove_message_markup, _edit_message
+)
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -37,6 +40,15 @@ def get_keyboard_marckup(markup):
     return ReplyKeyboardMarkup(keyboard)
 
 
+
+MARKUP_MSG_DECODER = {
+    models.MessageType.POLL: lambda x: x,
+    models.MessageType.FLY_BTN: get_inline_marckup,
+    models.MessageType.KEYBOORD_BTN: get_keyboard_marckup,
+    models.MessageType.SIMPLE_TEXT: lambda x: None,
+    None: lambda x: None
+}
+
 def get_message_text(text, user_keywords):
     keyword_processor = KeywordProcessor()
     keyword_processor.add_keywords_from_dict(user_keywords)
@@ -63,20 +75,18 @@ def send_poll(user_id, poll_id, text, markup, context):
         }
     }
     context.bot_data.update(payload)
+    return None
 
 
 def send_message(prev_state, next_state, context, user_id, prev_message_id):
     prev_msg_type = prev_state["message_type"] if prev_state else None
     next_msg_type = next_state["message_type"]
 
-    markup = next_state["markup"]
     message_text = get_message_text(
-        next_state["text"], 
-        next_state['user_keywords']
+        next_state["text"], next_state['user_keywords']
     )
-
+    
     photos = next_state.get("photos", [])
-
     if len(photos) > 1:
         _send_media_group(photos, user_id=user_id)
         photo = None
@@ -84,66 +94,46 @@ def send_message(prev_state, next_state, context, user_id, prev_message_id):
         photo = photos.pop(0)
     else:
         photo = None
-    
 
-    if prev_message_id and prev_message_id != '' and prev_msg_type != models.MessageType.POLL:
-        _revoke_message(
-            user_id=user_id,
-            message_id=prev_message_id
-        )
+    need_remove_markup = prev_message_id and \
+        (prev_msg_type in [models.MessageType.FLY_BTN, models.MessageType.KEYBOORD_BTN])
+    reply_markup = MARKUP_MSG_DECODER[next_msg_type](next_state["markup"])
+
+    if need_remove_markup:
+        if next_msg_type == prev_msg_type and len(prev_state.get("photos", [])) == 0:
+            message_id = _edit_message(
+                user_id=user_id,
+                text=message_text,
+                photo=photo,
+                reply_markup=reply_markup,
+                message_id=prev_message_id
+            )
+            return message_id
+        _remove_message_markup(user_id=user_id, message_id=prev_message_id)
     
     if next_msg_type == models.MessageType.POLL:
-        send_poll(
-            user_id, 
-            poll_id=next_state['poll_id'], 
-            text=message_text, 
-            markup=markup, 
-            context=context
+        message_id = send_poll(
+            user_id, poll_id=next_state['poll_id'], 
+            text=message_text, markup=reply_markup, context=context
         )
-        message_id = ''
-
-    else:
-        if next_msg_type == models.MessageType.KEYBOORD_BTN:
-            reply_markup = get_keyboard_marckup(markup)
-
-        elif next_msg_type == models.MessageType.FLY_BTN:
-            reply_markup = get_inline_marckup(markup)
-
-        else:
-            reply_markup = None
-
-        message_id = _send_message(
-            user_id=user_id,
-            text=message_text,
-            photo=photo,
-            reply_markup=reply_markup
-        )
-
+        return message_id
+    message_id = _send_message(
+        user_id=user_id, text=message_text,
+        photo=photo, reply_markup=reply_markup
+    )
     return message_id
 
 
 def send_broadcast_message(next_state, user_id, prev_message_id):
     next_msg_type = next_state["message_type"]
-
-    markup = next_state["markup"]
-    message_text = get_message_text(next_state["text"], next_state['user_keywords'])
-
-    if prev_message_id and prev_message_id != '' and prev_message_id != models.MessageType.POLL:
-        _revoke_message(
-            user_id=user_id,
-            message_id=prev_message_id
-        )
-
     if next_msg_type == models.MessageType.POLL:
-        send_poll(text='Опрос', markup=markup)
-        reply_markup = None
-    elif next_msg_type == models.MessageType.KEYBOORD_BTN:
-        reply_markup = get_keyboard_marckup(markup)
-    elif next_msg_type == models.MessageType.FLY_BTN:
-        reply_markup = get_inline_marckup(markup)
-    else:
-        reply_markup = None
+        return None
 
+    message_text = get_message_text(next_state["text"], next_state['user_keywords'])
+    if prev_message_id:
+        _remove_message_markup(user_id=user_id, message_id=prev_message_id)
+        
+    reply_markup = MARKUP_MSG_DECODER[next_msg_type](next_state["markup"])
     photos = next_state.get("photos", [])
     photo = photos.pop(0) if len(photos) > 0 else None
 

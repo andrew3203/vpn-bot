@@ -87,7 +87,7 @@ def _send_message(
     else:
         models.User.objects.filter(user_id=user_id).update(is_blocked_bot=False)
         return m.message_id
-   
+
 
 def _send_media_group(
     photos: list,
@@ -115,5 +115,63 @@ def _revoke_message(
         print(e)
 
 
+def _remove_message_markup(
+    message_id: str,
+    user_id: Union[str, int],
+    tg_token: str = TELEGRAM_TOKEN
+) -> bool:
+    bot = telegram.Bot(tg_token)
+    try:
+        bot.edit_message_reply_markup(
+            chat_id=user_id,
+            message_id=message_id,
+            reply_markup=None
+        )
+    except Exception as e:
+        print(e)
+
 
     
+def _edit_message(
+    user_id: Union[str, int],
+    text: str,
+    message_id: int,
+    photo: str = None,
+    parse_mode: Optional[str] = telegram.ParseMode.HTML,
+    reply_markup: Optional[List[List[Dict]]] = None,
+    tg_token: str = TELEGRAM_TOKEN,
+) -> bool:
+    bot = telegram.Bot(tg_token)
+    try:
+        if photo:
+            _remove_message_markup(message_id, user_id)
+            photo = open(photo, 'rb') if type(photo) == type('str') else photo
+            m = bot.send_photo(
+                chat_id=user_id,
+                caption=text,
+                photo=photo,
+                parse_mode=parse_mode, 
+                reply_markup=reply_markup,
+            )
+            res = m.message_id
+        else:
+            bot.edit_message_text(
+                chat_id=user_id,
+                message_id=message_id,
+                text=text,
+                parse_mode=parse_mode,
+                reply_markup=reply_markup
+            )
+            res = message_id
+            
+        
+    except telegram.error.Unauthorized:
+        print(f"Can't send message to {user_id}. Reason: Bot was stopped.")
+        models.User.objects.filter(user_id=user_id).update(is_blocked_bot=True)
+        return None
+
+    except Exception as e:
+        print(e)
+        return None
+
+    return res
