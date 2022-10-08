@@ -103,7 +103,7 @@ def cant_scan_qr(update: Update, context: CallbackContext) -> None:
 
 def buy_proxy(update: Update, context: CallbackContext) -> None:
     user_id = extract_user_data_from_update(update)["user_id"]
-    args = list(map(lambda x: x.lower().strip(), static_text.proxy_choose_msg_names))
+    args = list(map(lambda x: x.lower().replace(' ', ''), static_text.proxy_choose_msg_names))
     args = User.pop_choices(user_id, *args)
     kwargs = dict(list(zip(static_text.proxy_order_fields, args)))
     msg_text = ProxyOrder.create_new_order(user_id=user_id, **kwargs)

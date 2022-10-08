@@ -53,7 +53,7 @@ def setup_dispatcher(dp):
 
     # proxy action messages
     dp.add_handler(CallbackQueryHandler(action_handlers.buy_proxy, pattern=r'^купитьпрокси$'))
-    dp.add_handler(CallbackQueryHandler(action_handlers.show_countrys, pattern=r'^выбратьстранупрокси$'))
+    dp.add_handler(CallbackQueryHandler(action_handlers.show_countrys, pattern=r'(ipv4)|(ipv6)|(общиеipv4)'))
 
     # payment action messages
     dp.add_handler(CallbackQueryHandler(callback=action_handlers.topup, pattern=r'(\d+\s₽)'))
