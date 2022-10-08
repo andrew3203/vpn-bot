@@ -4,6 +4,8 @@ import re
 from django.utils import timezone
 from telegram import ParseMode, Update
 from telegram.ext import CallbackContext
+from app.proxy.models import ProxyOrder
+from app.vpn.models import VpnOrder
 
 from bot.models import User, Poll
 from proxy.models import Proxy
@@ -36,9 +38,10 @@ def command_start(update: Update, context: CallbackContext) -> None:
 
 def command_account(update: Update, context: CallbackContext) -> None: # TODO
     u, _ = User.get_user_and_created(update, context)
-    update_proxy_info = Proxy.update_info(u.user_id)
-    u.update_info(update_proxy_info)
-
+    update_proxy_info = ProxyOrder.update_info(u.user_id)
+    update_info = VpnOrder.update_info(u.user_id)
+    updates = {**update_proxy_info, **update_info}
+    u.update_info(updates)
     recive_command(update, context)
 
 

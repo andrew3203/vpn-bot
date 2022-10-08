@@ -118,6 +118,9 @@ class User(CreateUpdateTracker):
             f'{self.user_id}_keywords', 
             value=json.dumps(self.get_keywords(), ensure_ascii=False)
         )
+    
+    def update_info(self, data):
+        pass
 
     @staticmethod
     def get_state(user_id):

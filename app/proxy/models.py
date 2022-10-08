@@ -86,6 +86,9 @@ class ProxyOrder(CreateUpdateTracker):
         proxy_keywords = {**proxy_keywords, **ads}
         r.set(key, value=json.dumps(proxy_keywords, ensure_ascii=False))
     
+    @staticmethod
+    def update_info(user_id):
+        return {}
 
     @staticmethod
     def create_new_order(
@@ -93,6 +96,7 @@ class ProxyOrder(CreateUpdateTracker):
         country: str,  period: int, ptype: str, 
         count: str, auto_prolong: bool = False
     ) -> str:
+        _translate = {'ipv4': 4, 'ipv6': 6, 'https': 'http', 'socks5': 'socks'}
         resp = proxy_connector.get_price(period=period, version=version, count=count)
         accautn_balance, price = resp['balance'], resp['price']
 
@@ -105,8 +109,9 @@ class ProxyOrder(CreateUpdateTracker):
                     proxy_balance, accautn_balance=accautn_balance-price, 
                     count=count, price=price, version=version
                 )
+                version,  ptype= _translate[version], _translate[ptype]
                 proxy_list = proxy_connector.buy(
-                    count=count, period=period, country=country, version=version
+                    count=count, period=period, country=country, version=version, type=ptype
                 )['list'].values()
                 order = ProxyOrder.objects.create(
                     user=u, date_end=datetime.strptime(proxy_list[0]['date_end'], "%Y-%m-%d H:M:S") ,
@@ -227,6 +232,7 @@ class Proxy(CreateUpdateTracker):
     @property
     def date_end(self):
         return self.order.date_end
+
 
 
 @receiver(post_save, sender=ProxyOrder)

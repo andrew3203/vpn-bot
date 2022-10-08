@@ -34,11 +34,13 @@ def create_new_vpn_order(update: Update, context: CallbackContext) -> None:
     qr_photo = None
 
     info, created = VpnOrder.get_user_info(user_id)
-    if created or info['tariff_name'] == 'Пробный':
+    k1 = 'выбратьстрану'; k2 = 'сменитьтариф'
+    country, tariff_name = User.pop_choices(user_id, k1, k2)
+    if country and created:
+        tariff_name = info['tariff_name']
+    elif created or info['tariff_name'] == 'Пробный':
         country, tariff_name = info['country'], info['tariff_name']
-    else:
-        k1 = 'выбратьстрану'; k2 = 'сменитьтариф'
-        country, tariff_name = User.pop_choices(user_id, k1, k2)
+
 
     order, msg_text = VpnOrder.create_or_change(
         user_id=user_id,

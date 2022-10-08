@@ -220,6 +220,11 @@ class VpnOrder(CreateTracker):
         return None
 
     @staticmethod
+    def update_info(user_id):
+        return {}
+
+
+    @staticmethod
     def add_traffic(user_id: int, gb_amount: int):
         user = User.objects.get(user_id=user_id)
         order = VpnOrder.objects.filter(user=user).first()
@@ -303,7 +308,7 @@ class VpnOrder(CreateTracker):
              data = json.loads(data)
              created = False
         else:
-            data = {'tariff_name': 'Пробный', 'country': 'DE'}
+            data = {'tariff_name': 'Пробный', 'country': 'de'}
             created = True
             
         return data, created
