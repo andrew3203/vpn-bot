@@ -42,10 +42,10 @@ def get_keyboard_marckup(markup):
 
 
 MARKUP_MSG_DECODER = {
-    models.MessageType.POLL: lambda x: x,
+    models.MessageType.POLL: (lambda x: x),
     models.MessageType.FLY_BTN: get_inline_marckup,
     models.MessageType.KEYBOORD_BTN: get_keyboard_marckup,
-    models.MessageType.SIMPLE_TEXT: lambda x: None,
+    models.MessageType.SIMPLE_TEXT: (lambda x: None),
     None: lambda x: None
 }
 
@@ -132,7 +132,7 @@ def send_broadcast_message(next_state, user_id, prev_message_id):
     message_text = get_message_text(next_state["text"], next_state['user_keywords'])
     if prev_message_id:
         _remove_message_markup(user_id=user_id, message_id=prev_message_id)
-        
+
     reply_markup = MARKUP_MSG_DECODER[next_msg_type](next_state["markup"])
     photos = next_state.get("photos", [])
     photo = photos.pop(0) if len(photos) > 0 else None
