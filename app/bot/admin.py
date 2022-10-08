@@ -2,6 +2,7 @@ from curses.ascii import US
 from django.contrib import admin
 from django.http import HttpResponseRedirect, HttpResponseServerError
 from django.shortcuts import render
+from app.bot.models import Message
 from bot.models import User
 from abridge_bot.settings import DEBUG
 from bot.handlers.utils import utils
@@ -149,7 +150,9 @@ class MessageAdmin(admin.ModelAdmin):
     filter_horizontal = ('files',)
 
     def set_zeros(self, request, queryset):
-        queryset.update(clicks=0)
+        queryset.update(clicks=0, unique_clicks=0)
+        message_ids = queryset.values_list('pk', flat=True)
+        Message.unique_clicks_remove(message_ids)
         self.message_user(request, f"Счетчики кликов обнулены")
 
     actions = [set_zeros, ]

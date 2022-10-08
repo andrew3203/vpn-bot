@@ -33,7 +33,7 @@ def create_new_vpn_order(update: Update, context: CallbackContext) -> None:
     user_id = extract_user_data_from_update(update)["user_id"]
     qr_photo = None
 
-    info, created = VpnOrder.get_user_info()
+    info, created = VpnOrder.get_user_info(user_id)
     if created or info['tariff_name'] == 'Пробный':
         country, tariff_name = info['country'], info['tariff_name']
     else:
@@ -56,7 +56,7 @@ def create_new_vpn_order(update: Update, context: CallbackContext) -> None:
 
 def buy_traffic(update: Update, context: CallbackContext) -> None:
     user_id = extract_user_data_from_update(update)["user_id"]
-    info = VpnOrder.get_user_info()
+    info = VpnOrder.get_user_info(user_id)
     if info is None:
         msg_text = 'У вас нет VPN'
     else:
@@ -71,7 +71,7 @@ def buy_traffic(update: Update, context: CallbackContext) -> None:
 
 def delete_peer(update: Update, context: CallbackContext) -> None:
     user_id = extract_user_data_from_update(update)["user_id"]
-    info = VpnOrder.get_user_info()
+    info = VpnOrder.get_user_info(user_id)
     if info in None:
         msg_text = 'У вас нет VPN'
     else:

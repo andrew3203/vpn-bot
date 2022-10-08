@@ -454,8 +454,12 @@ class Message(CreateUpdateTracker):
         stack = list(set(stack))
         r.set('{message_id}_users_stack', json.dumps(stack))
         return len(stack)
-
-
+    
+    @staticmethod
+    def unique_clicks_remove(message_ids):
+         r = redis.from_url(REDIS_URL, decode_responses=True)
+         for message_id in message_ids:
+            r.delete(f'{message_id}_users_stack')
 
 
 class Poll(CreateUpdateTracker):
