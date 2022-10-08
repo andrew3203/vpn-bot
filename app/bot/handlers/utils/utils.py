@@ -1,9 +1,8 @@
-from bot import models
 from abridge_bot.settings import TELEGRAM_LOGS_CHAT_ID
 
 from flashtext import KeywordProcessor
 from bot.handlers.broadcast_message.utils import (
-    _send_message, _send_media_group, _revoke_message,
+    _send_message, _send_media_group,
     _remove_message_markup, _edit_message
 )
 from telegram import (
@@ -42,10 +41,10 @@ def get_keyboard_marckup(markup):
 
 
 MARKUP_MSG_DECODER = {
-    models.MessageType.POLL: (lambda x: x),
-    models.MessageType.FLY_BTN: get_inline_marckup,
-    models.MessageType.KEYBOORD_BTN: get_keyboard_marckup,
-    models.MessageType.SIMPLE_TEXT: (lambda x: None),
+    'POLL': (lambda x: x),
+    'FLY_BTN': get_inline_marckup,
+    'KEYBOORD_BTN': get_keyboard_marckup,
+    'SIMPLE_TEXT': (lambda x: None),
     None: (lambda x: None)
 }
 
@@ -96,7 +95,7 @@ def send_message(prev_state, next_state, context, user_id, prev_message_id):
         photo = None
 
     need_remove_markup = prev_message_id and \
-        (prev_msg_type in [models.MessageType.FLY_BTN, models.MessageType.KEYBOORD_BTN])
+        (prev_msg_type in ['FLY_BTN', 'KEYBOORD_BTN'])
     reply_markup = MARKUP_MSG_DECODER[next_msg_type](next_state["markup"])
 
     if need_remove_markup:
@@ -111,7 +110,7 @@ def send_message(prev_state, next_state, context, user_id, prev_message_id):
             return message_id
         _remove_message_markup(user_id=user_id, message_id=prev_message_id)
     
-    if next_msg_type == models.MessageType.POLL:
+    if next_msg_type == 'POLL':
         message_id = send_poll(
             user_id, poll_id=next_state['poll_id'], 
             text=message_text, markup=reply_markup, context=context
@@ -126,7 +125,7 @@ def send_message(prev_state, next_state, context, user_id, prev_message_id):
 
 def send_broadcast_message(next_state, user_id, prev_message_id):
     next_msg_type = next_state["message_type"]
-    if next_msg_type == models.MessageType.POLL:
+    if next_msg_type == 'POLL':
         return None
 
     message_text = get_message_text(next_state["text"], next_state['user_keywords'])

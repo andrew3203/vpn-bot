@@ -4,11 +4,10 @@ import re
 from django.utils import timezone
 from telegram import ParseMode, Update
 from telegram.ext import CallbackContext
-from app.proxy.models import ProxyOrder
-from app.vpn.models import VpnOrder
+from proxy.models import ProxyOrder
+from vpn.models import VpnOrder
 
 from bot.models import User, Poll
-from proxy.models import Proxy
 from bot.handlers.utils import utils
 from bot.handlers.utils.info import extract_user_data_from_update
 from bot.tasks import send_delay_message, check_deep_link
