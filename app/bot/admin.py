@@ -2,7 +2,7 @@ from curses.ascii import US
 from django.contrib import admin
 from django.http import HttpResponseRedirect, HttpResponseServerError
 from django.shortcuts import render
-from app.bot.models import Message
+from bot.models import Message
 from bot.models import User
 from abridge_bot.settings import DEBUG
 from bot.handlers.utils import utils
