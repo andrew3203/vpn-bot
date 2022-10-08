@@ -46,7 +46,7 @@ MARKUP_MSG_DECODER = {
     models.MessageType.FLY_BTN: get_inline_marckup,
     models.MessageType.KEYBOORD_BTN: get_keyboard_marckup,
     models.MessageType.SIMPLE_TEXT: (lambda x: None),
-    None: lambda x: None
+    None: (lambda x: None)
 }
 
 def get_message_text(text, user_keywords):
