@@ -191,7 +191,7 @@ class VpnOrder(CreateTracker):
     def check_traffic(self) -> str:
         traffic = 0
         msg_dict = dict(VPN_MSG_NAMES)
-        traffic = sum(list(self.peers.all().values_list('tariff', flat=True)))
+        traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
 
         now = timezone.now()
         end_date = self.created_at + timedelta(days=self.tariff.period)
