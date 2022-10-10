@@ -1,5 +1,5 @@
 from django.db import models
-from app.bot.models import Message
+from bot.models import Message
 from utils.models import CreateUpdateTracker
 from datetime import datetime, timedelta
 from datetime import timedelta
