@@ -84,5 +84,5 @@ class VPNConnector(object):
         url = self.base_url.format(method=method)
         resp = requests.get(url, headers=self.headers)
         assert int(resp.status_code) in [200, 201, 204], f'Error ({resp.status_code}) in GET PEER CONF via {url}\n{resp.text}'
-        return resp.text
+        return resp.content
     

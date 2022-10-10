@@ -56,7 +56,7 @@ def setup_dispatcher(dp):
     dp.add_handler(CallbackQueryHandler(action_handlers.show_countrys, pattern=r'(ipv4)|(ipv6)|(общиеipv4)'))
 
     # payment action messages
-    dp.add_handler(CallbackQueryHandler(callback=action_handlers.topup, pattern=r'^\d+\s₽$'))
+    dp.add_handler(CallbackQueryHandler(callback=action_handlers.topup, pattern=r'(\d+₽)|(\d+\₽)'))
 
     # recive all commands
     dp.add_handler(MessageHandler(Filters.command, chat.recive_command))

@@ -4,6 +4,7 @@ from celery.utils.log import get_task_logger
 from proxy.models import *
 from proxy.dispatcher import proxy_connector
 from bot.tasks import send_delay_message
+from bot.handlers.action import static_text
 
 logger = get_task_logger(__name__)
 
@@ -47,3 +48,12 @@ def change_order_task(order_ids):
     for order_id in order_ids:
         user_id = ProxyOrder.change_order(int(order_id))
         send_delay_message.delay(user_id=user_id, msg_name=msg_name)
+
+
+@app.task(ignore_result=True)
+def buy_proxy_task(user_id):
+    args = list(map(lambda x: x.lower().replace(' ', ''), static_text.proxy_choose_msg_names))
+    args = User.pop_choices(user_id, *args)
+    kwargs = dict(list(zip(static_text.proxy_order_fields, args)))
+    msg_text = ProxyOrder.create_new_order(user_id=user_id, **kwargs)
+    send_delay_message.delay(user_id=user_id, msg_name=msg_text)  
