@@ -1,6 +1,7 @@
+from ast import keyword
 import json
 import redis
-from abridge_bot.settings import VPN_MSG_NAMES, AVAILABLE_GBs, REDIS_URL
+from abridge_bot.settings import AVAILABLE_GBs, REDIS_URL
 from django.db import models
 from bot.models import User
 from utils.models import CreateTracker
@@ -179,6 +180,31 @@ class VpnOrder(CreateTracker):
     def __str__(self):
         return f'{self.user} - {self.tariff}'
     
+    def get_traffic_least(self):
+        traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
+        return traffic
+    
+    def get_keywords(self):
+        auto_prolong = 'Да' if self.auto_prolong else 'нет'
+        end_date = self.created_at + timedelta(days=self.tariff.period)
+        keywords = {
+            self.tariff: ['tariff_name'],
+            auto_prolong: ['vpn_auto_prolong'],
+            f'{self.peers.count()}': ['peers_count'],
+            f'{self.get_traffic_least():.2f} Гб': ['traffic_least'],
+            str(end_date): ['end_date']
+        }
+        return keywords
+
+    def set_keywords(self,):
+        r = redis.from_url(REDIS_URL)
+        keywords = self.get_keywords()
+        r.set(f'{self.user.user_id}_vpn_keywords', value=json.dumps(keywords))
+    
+    def del_keywords(self):
+        r = redis.from_url(REDIS_URL)
+        r.delete(f'{self.user.user_id}_vpn_keywords')
+
     def set_user_info(self) -> str:
         r = redis.from_url(REDIS_URL)
         user_id = self.user.user_id
@@ -190,7 +216,6 @@ class VpnOrder(CreateTracker):
             
     def check_traffic(self) -> str:
         traffic = 0
-        msg_dict = dict(VPN_MSG_NAMES)
         traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
 
         now = timezone.now()
@@ -198,24 +223,24 @@ class VpnOrder(CreateTracker):
         if end_date < now and self.auto_prolong:
             if self.user.balance - self.tariff.price >=0:
                  self.user.balance -= self.tariff.price
-                 return msg_dict['order_auto_prolonged']
+                 return 'order_auto_prolonged'
             self.active = False
             self.save()
-            return msg_dict['order_cant_updated']
+            return 'order_cant_updated'
         elif end_date < now:
             self.active = False
             self.save()
-            return msg_dict['order_cenceled']
+            return 'order_cenceled'
         elif end_date - now < timedelta(days=1):
-            return msg_dict['comes_to_the_end']
+            return 'comes_to_the_end'
 
 
         if round(self.tariff.traffic_lim - traffic, 4) <= 0.5000:
-            return msg_dict['traffic_05']
+            return 'traffic_05'
         elif round(self.tariff.traffic_lim - traffic, 4) < 0.0001:
             self.active = False
             self.save()
-            return msg_dict['traffic_0']
+            return 'traffic_0'
 
         return None
 
@@ -228,9 +253,8 @@ class VpnOrder(CreateTracker):
     def add_traffic(user_id: int, gb_amount: int):
         user = User.objects.get(user_id=user_id)
         order = VpnOrder.objects.filter(user=user).first()
-        msg_dict = dict(VPN_MSG_NAMES)
         if order is None:
-            return msg_dict['have_no_orders']
+            return 'have_no_orders'
         
         price = AVAILABLE_GBs[gb_amount]
 
@@ -319,8 +343,11 @@ class VpnOrder(CreateTracker):
 @receiver(post_save, sender=VpnOrder)
 def remove_user_states(sender, instance, **kwargs):
     if instance.active == False:
+        instance.del_keywords()
         for peer in instance.peers.all():
             peer.delete()
+    else:
+        instance.set_keywords()
 
 
 @receiver(post_delete, sender=Peer)

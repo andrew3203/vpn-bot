@@ -96,7 +96,8 @@ def cant_scan_qr(update: Update, context: CallbackContext) -> None:
         context.bot.send_document(
             user_id,
             document=peer.get_conf(),
-            caption=str(peer)
+            filename=f'{peer.server.country.upper()}-bridge.conf',
+            caption='Высылаю файл для подключения. Выбирете "импорт тунеля из файла", чтобы подключить данный тунель!'
         )
 
 

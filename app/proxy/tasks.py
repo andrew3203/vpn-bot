@@ -2,6 +2,7 @@ from abridge_bot.celery import app
 from celery.utils.log import get_task_logger
 
 from proxy.models import *
+from bot.models import User
 from proxy.dispatcher import proxy_connector
 from bot.tasks import send_delay_message
 from bot.handlers.action import static_text

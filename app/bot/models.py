@@ -179,11 +179,14 @@ class User(CreateUpdateTracker):
         proxy_kw = r.get(f'{user_id}_proxy_keywords')
         proxy_kw = json.loads(proxy_kw) if proxy_kw else {}
 
+        vpn_kw = r.get(f'{user_id}_vpn_keywords')
+        vpn_kw = json.loads(vpn_kw) if vpn_kw else {}
+
         choices_kw = r.get(f'{user_id}_choices')
         choices_kw = json.loads(choices_kw) if choices_kw else {}
         choices_kw = {v: [f'{k}'] for k, v in choices_kw.items()}
 
-        return {**user_kw, **proxy_kw, **choices_kw}
+        return {**user_kw, **proxy_kw, **choices_kw, **vpn_kw}
     
     @staticmethod
     def get_choices(user_id, *args):

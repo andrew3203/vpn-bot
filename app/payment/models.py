@@ -74,7 +74,7 @@ class Payment(CreateTracker):
             user=User.objects.get(user_id=user_id),
             price = price
         )
-        return payment.topup()
+        return payment.yoo_topup()
     
     def sucsess(self):
         self.user.balance += self.price
