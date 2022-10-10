@@ -171,7 +171,8 @@ def _edit_message(
         return None
 
     except Exception as e:
-        print(e)
-        return None
+        _revoke_message(message_id, user_id)
+        message_id = _send_message(user_id, text, photo, parse_mode, reply_markup)
+        return message_id
 
     return res
