@@ -254,6 +254,7 @@ class VpnOrder(CreateTracker):
     def create_or_change(user_id: int, tariff_name: str, country: str) -> tuple:
         user = User.objects.get(user_id=user_id)
         tariff = Tariff.objects.filter(name=tariff_name).first()
+        assert tariff is not None, 'Could not Find Tariff'
 
         prev_order = VpnOrder.objects.filter(user__user_id=user_id).first()
         if prev_order:

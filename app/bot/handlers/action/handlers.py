@@ -43,7 +43,6 @@ def create_new_vpn_order(update: Update, context: CallbackContext) -> None:
         country, tariff_name = info['country'], info['tariff_name']
 
     country = Message.encode_msg_name(country)
-    tariff_name = Message.encode_msg_name(tariff_name)
     order, msg_text = VpnOrder.create_or_change(
         user_id=user_id,
         country=country, tariff_name=tariff_name

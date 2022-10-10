@@ -98,7 +98,7 @@ class ProxyOrder(CreateUpdateTracker):
     ) -> str:
         _translate = {'ipv4': 4, 'ipv6': 6, 'https': 'http', 'socks5': 'socks'}
         resp = proxy_connector.get_price(period=period, version=version, count=count)
-        accautn_balance, price = resp['balance'], resp['price']
+        accautn_balance, price = float(resp['balance']), float(resp['price'])
 
         if accautn_balance - price >= 0:
             u = User.objects.get(user_id=user_id)
