@@ -1,7 +1,9 @@
 import requests
 import json
+import string
+import random
 
-import subprocess
+
 
 class VPNConnector(object):
     
@@ -14,7 +16,9 @@ class VPNConnector(object):
         self.total_trafic()
         
     def __generate_preshared_key(self) -> str:
-        preshkey = subprocess.check_output("wg genkey", shell=True).decode("utf-8").strip()
+        pull = string.ascii_lowercase + \
+            string.ascii_uppercase + string.digits + '_-+/'
+        preshkey = ''.join(random.SystemRandom().choice(pull) for _ in range(43)) + '='
         return preshkey
     
     def total_trafic(self):

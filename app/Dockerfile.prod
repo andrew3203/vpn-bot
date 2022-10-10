@@ -15,9 +15,8 @@ ENV PYTHONUNBUFFERED 1
 # install psycopg2 dependencies
 RUN apk update \
     && apk add postgresql-dev gcc python3-dev musl-dev
-
 RUN apk add -u zlib-dev jpeg-dev gcc musl-dev
-RUN apk add wireguard-tools
+
 
 # lint
 RUN pip install --upgrade pip

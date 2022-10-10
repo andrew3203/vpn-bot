@@ -186,6 +186,13 @@ class User(CreateUpdateTracker):
         return {**user_kw, **proxy_kw, **choices_kw}
     
     @staticmethod
+    def get_choices(user_id, *args):
+        r = redis.from_url(REDIS_URL, decode_responses=True)
+        choices_kw = r.get(f'{user_id}_choices')
+        choices_kw = json.loads(choices_kw) if choices_kw else {}
+        return [choices_kw.get(key) for key in args]
+    
+    @staticmethod
     def pop_choices(user_id, *args):
         r = redis.from_url(REDIS_URL, decode_responses=True)
         choices_kw = r.get(f'{user_id}_choices')

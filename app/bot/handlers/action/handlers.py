@@ -116,7 +116,7 @@ def show_countrys(update: Update, context: CallbackContext) -> None:
     update.callback_query.answer()
     msg_text = update.callback_query.data
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
-    args = User.pop_choices(user_id, static_text.proxy_version_name.lower().replace(' ', ''))
+    args = User.get_choices(user_id, static_text.proxy_version_name.lower().replace(' ', ''))
     next_state['markup'] = get_markup_countries(version=args[0])
     _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
 

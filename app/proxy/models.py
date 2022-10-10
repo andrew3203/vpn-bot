@@ -1,4 +1,5 @@
 from django.db import models
+from app.bot.models import Message
 from utils.models import CreateUpdateTracker
 from datetime import datetime, timedelta
 from datetime import timedelta
@@ -110,6 +111,7 @@ class ProxyOrder(CreateUpdateTracker):
                     count=count, price=price, version=version
                 )
                 version,  ptype= _translate[version], _translate[ptype]
+                country = Message.encode_msg_name(country)
                 proxy_list = proxy_connector.buy(
                     count=count, period=period, country=country, version=version, type=ptype
                 )['list'].values()
