@@ -209,7 +209,8 @@ VPN_MSG_NAMES = [
 PROXY_NAMES = [
     ('Прокси куплены'.lower().replace(' ', ''), 'Прокси куплены'),
     ('Недостаточно средств'.lower().replace(' ', ''), 'Недостаточно средств'),
-    ('На акаунте нету денег'.lower().replace(' ', ''), 'На акаунте нету денег')
+    ('На акаунте нету денег'.lower().replace(' ', ''), 'На акаунте нету денег'),
+    ('Сообщение для друга'.lower().replace(' ', ''), 'Сообщение для друга')
 ]
 MSG_PRIMARY_NAMES +=PROGREV_NAMES
 MSG_PRIMARY_NAMES +=YOO_MSG_NAMES
@@ -222,13 +223,8 @@ DEEP_CASHBACK_PERCENT = 0.05 # bonus cashback for invitor
 USER_CASHBACK_PERCENT = 0.10 # bonus cashback for invited user
 AVAILABLE_TOUPS = [100, 200, 500, 1000, 5000]
 
-# VPN GBs
-AVAILABLE_GBs = {
-    1: 79,
-    3: 249,
-    5: 349
-}
 
+GB_PRICE = 49
 #PROXY Commision
 PERSENT = 1.20
 

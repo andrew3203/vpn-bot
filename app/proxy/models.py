@@ -105,7 +105,7 @@ class ProxyOrder(CreateUpdateTracker):
             u = User.objects.get(user_id=user_id)
             price *= PERSENT
             if u.balance - price >= 0:
-                version,  ptype= _translate[version], _translate[ptype]
+                version, ptype, period = _translate[version], _translate[ptype], int(period)
                 country = Message.encode_msg_name(country)
                 date_end = timedelta(days=period) + timezone.now()
                 # date_end_str = list(proxy_list['list'].values())[0]['date_end']

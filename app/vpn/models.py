@@ -1,7 +1,7 @@
 from ast import keyword
 import json
 import redis
-from abridge_bot.settings import AVAILABLE_GBs, REDIS_URL
+from abridge_bot.settings import REDIS_URL
 from django.db import models
 from bot.models import User
 from utils.models import CreateTracker
@@ -183,7 +183,7 @@ class VpnOrder(CreateTracker):
     @property
     def traffic_amount(self):
         traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
-        return f'{traffic:.4} Гб'
+        return f'{traffic:.4} Гб' if traffic!= 0 else f'{traffic:.4} Гб'
     
     @property
     def traffic_least(self):

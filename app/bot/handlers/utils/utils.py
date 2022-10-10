@@ -99,6 +99,14 @@ def send_message(prev_state, next_state, context, user_id, prev_message_id):
     reply_markup = MARKUP_MSG_DECODER[next_msg_type](next_state["markup"])
 
     if need_remove_markup:
+        if next_msg_type == 'POLL':
+            _remove_message_markup(user_id=user_id, message_id=prev_message_id)
+            message_id = send_poll(
+                user_id, poll_id=next_state['poll_id'], 
+                text=message_text, markup=reply_markup, context=context
+            )
+            return message_id
+
         if next_msg_type == prev_msg_type and len(prev_state.get("photos", [])) == 0:
             message_id = _edit_message(
                 user_id=user_id,
@@ -110,12 +118,6 @@ def send_message(prev_state, next_state, context, user_id, prev_message_id):
             return message_id
         _remove_message_markup(user_id=user_id, message_id=prev_message_id)
     
-    if next_msg_type == 'POLL':
-        message_id = send_poll(
-            user_id, poll_id=next_state['poll_id'], 
-            text=message_text, markup=reply_markup, context=context
-        )
-        return message_id
     message_id = _send_message(
         user_id=user_id, text=message_text,
         photo=photo, reply_markup=reply_markup
