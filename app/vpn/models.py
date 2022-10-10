@@ -180,18 +180,25 @@ class VpnOrder(CreateTracker):
     def __str__(self):
         return f'{self.user} - {self.tariff}'
     
-    def get_traffic_least(self):
+    @property
+    def traffic_amount(self):
         traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
-        return traffic
+        return f'{traffic:.4} Гб'
+    
+    @property
+    def traffic_least(self):
+        traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
+        return f'{(self.tariff.traffic_lim - traffic):.4} Гб'
     
     def get_keywords(self):
         auto_prolong = 'Да' if self.auto_prolong else 'нет'
         end_date = self.created_at + timedelta(days=self.tariff.period)
         keywords = {
-            self.tariff: ['tariff_name'],
+            str(self.tariff): ['tariff_name'],
             auto_prolong: ['vpn_auto_prolong'],
             f'{self.peers.count()}': ['peers_count'],
-            f'{self.get_traffic_least():.2f} Гб': ['traffic_least'],
+            self.traffic_amount: ['traffic_amount'],
+            self.traffic_least: ['traffic_least'],
             str(end_date): ['end_date']
         }
         return keywords
@@ -215,9 +222,6 @@ class VpnOrder(CreateTracker):
         r.set(f'{user_id}_vpn_data', json.dumps(data))
             
     def check_traffic(self) -> str:
-        traffic = 0
-        traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
-
         now = timezone.now()
         end_date = self.created_at + timedelta(days=self.tariff.period)
         if end_date < now and self.auto_prolong:
@@ -235,9 +239,10 @@ class VpnOrder(CreateTracker):
             return 'comes_to_the_end'
 
 
-        if round(self.tariff.traffic_lim - traffic, 4) <= 0.5000:
+        traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
+        if self.tariff.traffic_lim - traffic <= 0.5000:
             return 'traffic_05'
-        elif round(self.tariff.traffic_lim - traffic, 4) < 0.0001:
+        elif self.tariff.traffic_lim - traffic < 0.0001:
             self.active = False
             self.save()
             return 'traffic_0'

@@ -59,7 +59,7 @@ class TariffAdmin(admin.ModelAdmin):
 @admin.register(VpnOrder)
 class OrderAdmin(admin.ModelAdmin):
     list_display = [
-        'user', 'tariff', 'active'
+        'user', 'get_traffic_amount', 'get_traffic_least', 'tariff', 'active', 'get_peers_amount'
     ]
     search_fields = ('user', 'tariff')
     list_filter = ["tariff", 'active', 'refounded',]
@@ -79,3 +79,16 @@ class OrderAdmin(admin.ModelAdmin):
         }),
     )
     filter_horizontal = ('peers',)
+
+    def get_traffic_amount(self, obj):
+        return obj.traffic_amount
+    
+    def get_traffic_least(self, obj):
+        return obj.traffic_least
+    
+    def get_peers_amount(self, obj):
+        return obj.peers.count()
+
+    get_traffic_amount.short_description = 'Израсходовано'
+    get_traffic_least.short_description = 'Осталось'
+    get_peers_amount.short_description = 'Кол-во подключений'

@@ -2,7 +2,8 @@ from django.db import models
 from utils.models import CreateTracker
 from bot.models import User
 import uuid
-from yookassa import Configuration, Payment
+from yookassa import Configuration
+from yookassa import Payment as YooPayment
 from abridge_bot.settings import (
     YOO_ACCAOUNT_ID, YOO_SECRET_KEY, YOO_RETURN_UTL,
     DEEP_CASHBACK_PERCENT, USER_CASHBACK_PERCENT,
@@ -52,7 +53,7 @@ class Payment(CreateTracker):
 
         payment_name = self.__str__()
 
-        payment = Payment.create({
+        payment = YooPayment.create({
             "amount": {
                 "value": self.price,
                 "currency": "RUB"
