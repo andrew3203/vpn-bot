@@ -94,14 +94,13 @@ class ProxyConnector(object):
 
     def buy(self, 
             count: int, period: int, country: str, version: str,
-            type: str = 'socks', auto_prolong: bool = False, 
+            type: str = 'socks',
             descr: str = ''
         ) -> dict:
         url = self.__get_url(
             method='buy', 
             count=count, period=period, version=version,
-            country=country, type=type, auto_prolong=auto_prolong, 
-            descr=descr
+            country=country, type=type, descr=descr
         )
         return self.__return_data(url)
     

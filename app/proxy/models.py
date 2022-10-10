@@ -2,7 +2,6 @@ from django.db import models
 from bot.models import Message
 from utils.models import CreateUpdateTracker
 from datetime import datetime, timedelta
-from datetime import timedelta
 from django.db.models.signals import  post_save
 from django.dispatch import receiver
 import redis
@@ -114,9 +113,10 @@ class ProxyOrder(CreateUpdateTracker):
                 country = Message.encode_msg_name(country)
                 proxy_list = proxy_connector.buy(
                     count=count, period=period, country=country, version=version, type=ptype
-                )['list'].values()
+                )
+                date_end = list(proxy_list['list'].values())[0]['date_end']
                 order = ProxyOrder.objects.create(
-                    user=u, date_end=datetime.strptime(proxy_list[0]['date_end'], "%Y-%m-%d H:M:S") ,
+                    user=u, date_end=datetime.strptime(date_end, "%Y-%m-%d %H:%M:%S")  ,
                     proxy_version=version, proxy_type=ptype, proxy_country=country, price=price
                 )
                 for p in proxy_list:

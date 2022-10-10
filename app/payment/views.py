@@ -18,9 +18,11 @@ class YooPaymentEventView(View):
             notification_object = WebhookNotification(event_json)
         except Exception as e:
             logger.error(e)
-
+            return HttpResponse(status=400)
+        
         payment_id = notification_object.payment_method.id
         event = notification_object.event
+        logger.info(f'GOT {event} for {payment_id}')
 
         msg_name, user_id = Payment.yoo_process_event(payment_id, event)
         send_delay_message.delay(user_id=user_id, msg_name=msg_name)

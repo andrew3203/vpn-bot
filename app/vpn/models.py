@@ -240,7 +240,7 @@ class VpnOrder(CreateTracker):
 
 
         traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
-        if self.tariff.traffic_lim - traffic <= 0.5000:
+        if self.tariff.traffic_lim - traffic <= 0.1000:
             return 'traffic_05'
         elif self.tariff.traffic_lim - traffic < 0.0001:
             self.active = False
