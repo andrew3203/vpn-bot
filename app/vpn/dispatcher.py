@@ -1,12 +1,10 @@
 import requests
 import json
-import string
-import random
+from wgnlpy import PresharedKey 
 
 
 
 class VPNConnector(object):
-    
     def __init__(self, secret: str, link: str) -> None:
         self.base_url = f'{link}/v1' + '{method}'
         self.headers = {
@@ -14,12 +12,6 @@ class VPNConnector(object):
             'Authorization': f'Bearer {secret}'
         }
         self.total_trafic()
-        
-    def __generate_preshared_key(self) -> str:
-        pull = string.ascii_lowercase + \
-            string.ascii_uppercase + string.digits + '_-+'
-        preshkey = ''.join(random.SystemRandom().choice(pull) for _ in range(43)) + '='
-        return preshkey
     
     def total_trafic(self):
         method = f'/devices/'
@@ -50,7 +42,7 @@ class VPNConnector(object):
             prev_ips = p[-1]['allowed_ips'] if len(p) > 0 else ['10.66.66.1/32', 'fd42:42:42::1/128']
             
         url = self.base_url.format(method='/devices/wg0/peers/')
-        preshkey = self.__generate_preshared_key()
+        preshkey = str(PresharedKey.generate())
         data = {
             'allowed_ips': self.__get_next_ips(prev_ips),
             'preshared_key': preshkey,
@@ -58,7 +50,7 @@ class VPNConnector(object):
         }
         resp = requests.post(url, headers=self.headers, data=json.dumps(data))
         assert int(resp.status_code) in [200, 201, 204], f'Error ({resp.status_code}) in CREATE PEER via {url}\n{resp.text}'
-        return preshkey
+        return resp.json()['url_safe_public_key']
     
     def delete_peer(self, url_safe_public_key: str) -> bool:
         method = f'/devices/wg0/peers/{url_safe_public_key}/'

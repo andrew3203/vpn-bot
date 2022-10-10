@@ -50,7 +50,7 @@ def create_new_vpn_order(update: Update, context: CallbackContext) -> None:
     qr_photo = order.peers.first().get_qr()
     msg_text = update.callback_query.data
 
-    update.callback_query.answer()
+    update.callback_query.answer(msg_text)
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
     photos = next_state.get("photos", [])
     next_state['photos'] = [qr_photo] + photos
@@ -67,7 +67,7 @@ def buy_traffic(update: Update, context: CallbackContext) -> None:
         gb_amount = int(gb_amount[0][:-2]),
         msg_text = VpnOrder.add_traffic(user_id=user_id, gb_amount=gb_amount)
 
-    update.callback_query.answer()
+    update.callback_query.answer(msg_text)
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
     _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
 
@@ -83,7 +83,7 @@ def delete_peer(update: Update, context: CallbackContext) -> None:
         Peer.objects.get(pk=peer_id).delete()
         msg_text = 'Подключение удалено'
 
-    update.callback_query.answer()
+    update.callback_query.answer(msg_text)
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
     _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
 
@@ -124,9 +124,9 @@ def show_countrys(update: Update, context: CallbackContext) -> None:
 def topup(update: Update, context: CallbackContext) -> None:
     user_id = extract_user_data_from_update(update)["user_id"]
     msg_text = update.callback_query.data
-    cnfrm_url = Payment.yoo_make_payment(price=int(msg_text[:-1]), user_id=user_id)
-    update.callback_query.answer()
-    msg_text = update.callback_query.data
+    price = int(re.findall('\d+', msg_text)[0])
+    cnfrm_url = Payment.yoo_make_payment(price=price, user_id=user_id)
+    update.callback_query.answer('Платеж сформирован')
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
     next_state['markup'] = [[(c[0], cnfrm_url) for c in r]for r in next_state['markup']]
     _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)

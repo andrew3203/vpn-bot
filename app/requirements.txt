@@ -38,4 +38,5 @@ humanize
 
 # VPN
 qrcode
-pyswagger
+#pyswagger
+wgnlpy

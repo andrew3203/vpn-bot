@@ -130,6 +130,10 @@ class ProxyOrder(CreateUpdateTracker):
                 order.save()
                 return 'Прокси куплены'
             return 'Недостаточно средств'
+        admin_logs_message(
+            balance_error, accautn_balance=accautn_balance, 
+            user_id=user_id, price=price
+        )
         return 'На акаунте нету денег'
     
     @staticmethod
