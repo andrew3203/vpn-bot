@@ -71,8 +71,8 @@ class VpnServer(models.Model):
     def save_peer_traffic(self, public_key):
         vpn_connector = VPNConnector(self.secret, self.link)
         update = vpn_connector.get_peer(public_key)
-        new_bytes = update['total_receive_bytes'] + \
-            update['total_transmit_bytes']
+        new_bytes = update.get('total_receive_bytes',0) + \
+            update.get('total_transmit_bytes',0)
         self.traffic += round(new_bytes / 1073741824, 6)
         self.save()
 

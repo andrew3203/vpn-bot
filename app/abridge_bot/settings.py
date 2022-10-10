@@ -204,11 +204,16 @@ VPN_MSG_NAMES = [
     ('order_cenceled', 'Ваш заказ закрыт'),
     ('comes_to_the_end', 'Прошел месяц с покупки'),
     ('have_no_orders', 'У вас нету заказов'),
-
+]
+PROXY_NAMES = [
+    ('Прокси куплены'.lower().replace(' ', ''), 'Прокси куплены'),
+    ('Недостаточно средств'.lower().replace(' ', ''), 'Недостаточно средств'),
+    ('На акаунте нету денег'.lower().replace(' ', ''), 'На акаунте нету денег')
 ]
 MSG_PRIMARY_NAMES +=PROGREV_NAMES
 MSG_PRIMARY_NAMES +=YOO_MSG_NAMES
 MSG_PRIMARY_NAMES +=VPN_MSG_NAMES
+MSG_PRIMARY_NAMES +=PROXY_NAMES
 
 
 # PAYMENT SETTINGS

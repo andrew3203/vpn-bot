@@ -17,7 +17,7 @@ class VPNConnector(object):
         
     def __generate_preshared_key(self) -> str:
         pull = string.ascii_lowercase + \
-            string.ascii_uppercase + string.digits + '_-+/'
+            string.ascii_uppercase + string.digits + '_-+'
         preshkey = ''.join(random.SystemRandom().choice(pull) for _ in range(43)) + '='
         return preshkey
     

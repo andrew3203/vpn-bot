@@ -106,7 +106,7 @@ def buy_proxy(update: Update, context: CallbackContext) -> None:
     args = User.pop_choices(user_id, *args)
     kwargs = dict(list(zip(static_text.proxy_order_fields, args)))
     msg_text = ProxyOrder.create_new_order(user_id=user_id, **kwargs)
-    update.callback_query.answer()
+    update.callback_query.answer(msg_text)
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
     _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
 
