@@ -176,3 +176,10 @@ def change_command(update: Update, context: CallbackContext) -> None:
         msg_text = 'Ошибка ввода'
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
     _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
+
+def invite_friends(update: Update, context: CallbackContext) -> None:
+    recive_calback(update, context)
+    msg_text = 'Сообщение для друга'
+    user_id = extract_user_data_from_update(update)["user_id"]
+    prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
+    _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)

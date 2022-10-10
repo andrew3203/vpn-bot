@@ -50,6 +50,9 @@ def setup_dispatcher(dp):
     dp.add_handler(CallbackQueryHandler(action_handlers.buy_traffic, pattern=r'^купитьгб$'))
     dp.add_handler(CallbackQueryHandler(action_handlers.create_new_vpn_order, pattern=r'^приобреститариф$'))
     dp.add_handler(CallbackQueryHandler(action_handlers.delete_peer, pattern=r'^удалитьподключение$'))
+    dp.add_handler(CallbackQueryHandler(action_handlers.invite_friends, pattern=r'^пригласитьдрузей!$'))
+
+    
 
     # proxy action messages
     dp.add_handler(CallbackQueryHandler(action_handlers.buy_proxy, pattern=r'^купитьпрокси$'))

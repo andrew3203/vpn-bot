@@ -2,6 +2,7 @@ from django.db import models
 from bot.models import Message
 from utils.models import CreateUpdateTracker
 from datetime import datetime, timedelta
+from django.utils import timezone
 from django.db.models.signals import  post_save
 from django.dispatch import receiver
 import redis
@@ -104,22 +105,20 @@ class ProxyOrder(CreateUpdateTracker):
             u = User.objects.get(user_id=user_id)
             price *= PERSENT
             if u.balance - price >= 0:
-                u.balance -= price; u.save()
-                admin_logs_message(
-                    proxy_balance, accautn_balance=accautn_balance-price, 
-                    count=count, price=price, version=version
-                )
                 version,  ptype= _translate[version], _translate[ptype]
                 country = Message.encode_msg_name(country)
+                date_end = timedelta(days=period) + timezone.now()
+                # date_end_str = list(proxy_list['list'].values())[0]['date_end']
+                # date_end = datetime.strptime(date_end_str, "%Y-%m-%d %H:%M:%S")
+                order = ProxyOrder.objects.create(
+                    user=u, date_end=date_end,
+                    proxy_version=version, proxy_type=ptype, proxy_country=country, price=price
+                )
                 proxy_list = proxy_connector.buy(
                     count=count, period=period, country=country, version=version, type=ptype
                 )
-                date_end = list(proxy_list['list'].values())[0]['date_end']
-                order = ProxyOrder.objects.create(
-                    user=u, date_end=datetime.strptime(date_end, "%Y-%m-%d %H:%M:%S")  ,
-                    proxy_version=version, proxy_type=ptype, proxy_country=country, price=price
-                )
-                for p in proxy_list:
+                order.save()
+                for p in proxy_list['list'].values():
                     new_proxy = Proxy.objects.create(
                         proxy_id=p['id'],
                         proxy=f"{p['host']}:{p['port']}:{p['user']}:{p['pass']}"
@@ -128,6 +127,11 @@ class ProxyOrder(CreateUpdateTracker):
                     order.proxy.add(new_proxy)
                 order.auto_prolong = auto_prolong
                 order.save()
+                u.balance -= price; u.save()
+                admin_logs_message(
+                    proxy_balance, accautn_balance=accautn_balance-price, 
+                    count=count, price=price, version=version
+                )
                 return 'Прокси куплены'
             return 'Недостаточно средств'
         admin_logs_message(

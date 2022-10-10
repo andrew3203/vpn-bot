@@ -9,7 +9,7 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from vpn.dispatcher import VPNConnector
 from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 
 # поменяться местами
@@ -198,6 +198,7 @@ class VpnOrder(CreateTracker):
             auto_prolong: ['vpn_auto_prolong'],
             f'{self.peers.count()}': ['peers_count'],
             self.traffic_amount: ['traffic_amount'],
+            f'{self.tariff.price}': ['tariff_price'],
             self.traffic_least: ['traffic_least'],
             str(end_date): ['end_date']
         }

@@ -239,4 +239,4 @@ PROXY_API_KEY = os.environ.get("PROXY_API_KEY")
 # YOOKASSA API
 YOO_ACCAOUNT_ID = os.environ.get("YOO_ACCAOUNT_ID")
 YOO_SECRET_KEY = os.environ.get("YOO_SECRET_KEY")
-YOO_RETURN_UTL = os.environ.get("YOO_RETURN_UTL", default='https://bridge-vpn.store')
+YOO_RETURN_UTL = os.environ.get("YOO_RETURN_UTL", default='https://t.me/bridge_vpn_bot')
