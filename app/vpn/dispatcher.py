@@ -25,7 +25,7 @@ class VPNConnector(object):
         method = f'/devices/'
         url = self.base_url.format(method=method)
         resp = requests.get(url, headers=self.headers)
-        assert int(resp.status_code) in [200, 201, 204], f'Conection error to VPN server {url}'
+        assert int(resp.status_code) in [200, 201, 204], f'Conection error {resp.status_code} to VPN server {url}\n{resp.text}'
         total = 0
         for intr in resp.json():
             total += intr['total_receive_bytes'] + intr['total_transmit_bytes']
@@ -57,41 +57,40 @@ class VPNConnector(object):
             'persistent_keepalive_interval': "24s"
         }
         resp = requests.post(url, headers=self.headers, data=json.dumps(data))
-        assert int(resp.status_code) in [200, 201, 204], f'Error in CREATE PEER via {url}'
+        assert int(resp.status_code) in [200, 201, 204], f'Error ({resp.status_code}) in CREATE PEER via {url}\n{resp.text}'
         return preshkey
     
     def delete_peer(self, url_safe_public_key: str) -> bool:
         method = f'/devices/wg0/peers/{url_safe_public_key}/'
         url = self.base_url.format(method=method)
         resp = requests.delete(url, headers=self.headers)
-        print(int(resp.status_code))
         return int(resp.status_code) in [200, 201, 204]
     
     def peers_list(self) -> dict:
         method = '/devices/wg0/peers/'
         url = self.base_url.format(method=method)
         resp = requests.get(url, headers=self.headers)
-        assert int(resp.status_code) in [200, 201, 204], f'Error in PEERs LIST via {url}'
+        assert int(resp.status_code) in [200, 201, 204], f'Error ({resp.status_code}) in PEERs LIST via {url}\n{resp.text}'
         return resp.json()
     
     def get_peer(self, url_safe_public_key: str) -> bytes:
         method = f'/devices/wg0/peers/{url_safe_public_key}/'
         url = self.base_url.format(method=method)
         resp = requests.get(url, headers=self.headers)
-        assert int(resp.status_code) in [200, 201, 204], f'Error in GET PEER via {url}'
+        assert int(resp.status_code) in [200, 201, 204], f'Error ({resp.status_code}) in GET PEER via {url}\n{resp.text}'
         return resp.json()
     
     def get_peer_qr(self, url_safe_public_key: str) -> bytes:
         method = f'/devices/wg0/peers/{url_safe_public_key}/quick.conf.png?width=256'
         url = self.base_url.format(method=method)
         resp = requests.get(url, headers=self.headers)
-        assert int(resp.status_code) in [200, 201, 204], f'Error in GET PEER QR via {url}'
+        assert int(resp.status_code) in [200, 201, 204], f'Error ({resp.status_code}) in GET PEER QR via {url}\n{resp.text}'
         return resp.content
     
     def get_peer_conf(self, url_safe_public_key: str) -> bytes:
         method = f'/devices/wg0/peers/{url_safe_public_key}/quick.conf'
         url = self.base_url.format(method=method)
         resp = requests.get(url, headers=self.headers)
-        assert int(resp.status_code) in [200, 201, 204], f'Error in GET PEER CONF via {url}'
+        assert int(resp.status_code) in [200, 201, 204], f'Error ({resp.status_code}) in GET PEER CONF via {url}\n{resp.text}'
         return resp.text
     
