@@ -183,13 +183,13 @@ class VpnOrder(CreateTracker):
     @property
     def traffic_amount(self):
         traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
-        return f'{traffic:.4} Гб' if traffic != 0 else f'{traffic:.4} Гб'
+        return f'{traffic} Гб'
     
     @property
     def traffic_least(self):
         traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
         traffic = self.tariff.traffic_lim - traffic
-        return f'{traffic:.4} Гб' if traffic != 0 else f'{traffic:.4} Гб'
+        return  f'{traffic} Гб'
     
     def get_keywords(self):
         auto_prolong = 'Да' if self.auto_prolong else 'нет'
