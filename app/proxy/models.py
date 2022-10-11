@@ -83,7 +83,7 @@ class ProxyOrder(CreateUpdateTracker):
         r = redis.from_url(REDIS_URL)
         key = f'{self.user.user_id}_proxy_keywords'
         proxy_keywords = self.get_keywords()
-        ads = {ads[v]: [f'k'] for k, v in kwarks.items()}  
+        ads = {ads[v]: [f'{k}'] for k, v in kwarks.items()}  
         proxy_keywords = {**proxy_keywords, **ads}
         r.set(key, value=json.dumps(proxy_keywords, ensure_ascii=False))
     
@@ -119,12 +119,11 @@ class ProxyOrder(CreateUpdateTracker):
                 )
                 order.save()
                 for p in proxy_list['list'].values():
-                    new_proxy = Proxy.objects.create(
+                    Proxy.objects.create(
                         proxy_id=p['id'],
-                        proxy=f"{p['host']}:{p['port']}:{p['user']}:{p['pass']}"
-                    )
-                    new_proxy.save()
-                    order.proxy.add(new_proxy)
+                        proxy=f"{p['host']}:{p['port']}:{p['user']}:{p['pass']}",
+                        order=order
+                    ).save()
                 order.auto_prolong = auto_prolong
                 order.save()
                 u.balance -= price; u.save()

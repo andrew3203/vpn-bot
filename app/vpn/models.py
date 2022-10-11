@@ -155,7 +155,7 @@ class VpnOrder(CreateTracker):
         verbose_name='Тариф',
         on_delete=models.SET_NULL, null=True
     )
-    add_traffic = models.IntegerField(
+    ad_traffic = models.IntegerField(
         'Доп. Трафик',
         default=0, blank=True
     )
@@ -233,12 +233,12 @@ class VpnOrder(CreateTracker):
         if end_date < now and self.auto_prolong:
             if self.user.balance - self.tariff.price >=0:
                  self.user.balance -= self.tariff.price; self.user.save()
-                 self.add_traffic = 0
+                 self.ad_traffic = 0
                  self.peers.all().update(traffic=0)
                  self.save()
                  return 'order_auto_prolonged'
             self.active = False
-            self.add_traffic = 0
+            self.ad_traffic = 0
             self.save()
             return 'order_cant_updated'
         elif end_date < now:
@@ -250,12 +250,12 @@ class VpnOrder(CreateTracker):
 
 
         traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
-        traffic_lim = self.tariff.traffic_lim + self.add_traffic
+        traffic_lim = self.tariff.traffic_lim + self.ad_traffic
         if traffic_lim - traffic <= 0.1000:
             return 'traffic_05'
         elif traffic_lim - traffic < 0.0001:
             self.active = False
-            self.add_traffic = 0
+            self.ad_traffic = 0
             self.save()
             return 'traffic_0'
 
@@ -278,7 +278,7 @@ class VpnOrder(CreateTracker):
         if user.balance - price < 0:
             return 'Недостаточно средств'
 
-        order.add_traffic += gb_amount
+        order.ad_traffic += gb_amount
         order.save()
         user.balance -= price
         user.save
