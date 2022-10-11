@@ -72,7 +72,7 @@ class ProxyOrder(CreateUpdateTracker):
         keywords['ipv6_price'] = ipv6_price * PERSENT
         keywords['ipv4_shared_price'] = ipv4_shared_price * PERSENT
         keywords['proxy_list'] = proxy_list
-        keywords['proxy_date_end'] = self.date_end
+        keywords['proxy_date_end'] = self.date_end.strftime("%m/%d/%Y, %H:%M:%S")
         keywords['proxy_version'] = f'IPv{self.proxy_version}'
         keywords['proxy_type'] = self.proxy_type.upper()
         keywords['proxy_country'] = self.proxy_country.upper()

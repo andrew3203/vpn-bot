@@ -155,6 +155,10 @@ class VpnOrder(CreateTracker):
         verbose_name='Тариф',
         on_delete=models.SET_NULL, null=True
     )
+    add_traffic = models.IntegerField(
+        'Доп. Трафик',
+        default=0, blank=True
+    )
     peers = models.ManyToManyField(
         Peer,
         verbose_name='Подключения',
@@ -201,7 +205,7 @@ class VpnOrder(CreateTracker):
             self.traffic_amount: ['traffic_amount'],
             f'{self.tariff.price}': ['tariff_price'],
             self.traffic_least: ['traffic_least'],
-            str(end_date): ['end_date']
+            end_date.strftime("%m/%d/%Y, %H:%M:%S"): ['end_date']
         }
         return keywords
 
@@ -228,24 +232,30 @@ class VpnOrder(CreateTracker):
         end_date = self.created_at + timedelta(days=self.tariff.period)
         if end_date < now and self.auto_prolong:
             if self.user.balance - self.tariff.price >=0:
-                 self.user.balance -= self.tariff.price
+                 self.user.balance -= self.tariff.price; self.user.save()
+                 self.add_traffic = 0
+                 self.peers.all().update(traffic=0)
+                 self.save()
                  return 'order_auto_prolonged'
             self.active = False
+            self.add_traffic = 0
             self.save()
             return 'order_cant_updated'
         elif end_date < now:
             self.active = False
             self.save()
             return 'order_cenceled'
-        elif end_date - now < timedelta(days=1):
+        elif end_date - now < timedelta(hours=2):
             return 'comes_to_the_end'
 
 
         traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
-        if self.tariff.traffic_lim - traffic <= 0.1000:
+        traffic_lim = self.tariff.traffic_lim + self.add_traffic
+        if traffic_lim - traffic <= 0.1000:
             return 'traffic_05'
-        elif self.tariff.traffic_lim - traffic < 0.0001:
+        elif traffic_lim - traffic < 0.0001:
             self.active = False
+            self.add_traffic = 0
             self.save()
             return 'traffic_0'
 
@@ -267,15 +277,11 @@ class VpnOrder(CreateTracker):
 
         if user.balance - price < 0:
             return 'Недостаточно средств'
-        
 
+        order.add_traffic += gb_amount
+        order.save()
         user.balance -= price
         user.save
-
-        new_traffic_lim = gb_amount + order.tariff.traffic_lim
-        order.tariff = Tariff.objects.get_or_create(
-            traffic_lim=new_traffic_lim)
-        order.save()
         if order.active:
             return 'Покупка ГБ успешна'
         else:
@@ -292,9 +298,14 @@ class VpnOrder(CreateTracker):
             if prev_order.tariff == tariff:
                 msg_text = 'У вас прежний тариф'
                 return prev_order, msg_text
+            
+            if user.balance - tariff.price < 0:
+                msg_text = 'Не хватает средств'
+                return prev_order, msg_text
+
             prev_order.tariff = tariff
-            order.set_user_info()
             prev_order.save()
+            user.balance -= tariff.price; user.save()
             msg_text = 'Тариф изменен'
             return prev_order, msg_text
         elif user.balance - tariff.price < 0:
@@ -317,8 +328,7 @@ class VpnOrder(CreateTracker):
         order = VpnOrder.objects.get(user__user_id=user_id)
         # TODO потом их будет больше, надо балансировать нагрузку будет
         server = VpnServer.objects.filter(country=country).first()
-        for peer in order.peers.all():
-            peer.delete()
+        order.peers.all().delete()
         peer = server.create_peer()
         order.peers.add(peer)
         order.save()
@@ -351,8 +361,7 @@ class VpnOrder(CreateTracker):
 def remove_user_states(sender, instance, **kwargs):
     if instance.active == False:
         instance.del_keywords()
-        for peer in instance.peers.all():
-            peer.delete()
+        instance.peers.all().delete()
     else:
         instance.set_keywords()
 

@@ -59,14 +59,9 @@ def create_new_vpn_order(update: Update, context: CallbackContext) -> None:
 
 def buy_traffic(update: Update, context: CallbackContext) -> None:
     user_id = extract_user_data_from_update(update)["user_id"]
-    info = VpnOrder.get_user_info(user_id)
-    if info is None:
-        msg_text = 'У вас нет VPN'
-    else:
-        gb_amount = User.pop_choices(user_id, 'купитьгигобайты')
-        gb_amount = int(gb_amount[0][:-2]),
-        msg_text = VpnOrder.add_traffic(user_id=user_id, gb_amount=gb_amount)
-
+    args = User.pop_choices(user_id, 'купитьгигобайты')
+    gb_amount = int(re.findall('\d+', args[0])[0])
+    msg_text = VpnOrder.add_traffic(user_id=user_id, gb_amount=gb_amount)
     update.callback_query.answer(msg_text)
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
     _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
