@@ -62,7 +62,7 @@ class ProxyOrder(CreateUpdateTracker):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'{self.user} - {self.tariff}'
+        return f'{self.user} - {self.price}'
 
     def get_keywords(self) -> dict:
         keywords = {}
