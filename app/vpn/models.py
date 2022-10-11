@@ -1,7 +1,7 @@
 from ast import keyword
 import json
 import redis
-from abridge_bot.settings import REDIS_URL
+from abridge_bot.settings import REDIS_URL, GB_PRICE
 from django.db import models
 from bot.models import User
 from utils.models import CreateTracker
@@ -183,12 +183,13 @@ class VpnOrder(CreateTracker):
     @property
     def traffic_amount(self):
         traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
-        return f'{traffic:.4} Гб' if traffic!= 0 else f'{traffic:.4} Гб'
+        return f'{traffic:.4} Гб' if traffic != 0 else f'{traffic:.4} Гб'
     
     @property
     def traffic_least(self):
         traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
-        return f'{(self.tariff.traffic_lim - traffic):.4} Гб'
+        traffic = self.tariff.traffic_lim - traffic
+        return f'{traffic:.4} Гб' if traffic != 0 else f'{traffic:.4} Гб'
     
     def get_keywords(self):
         auto_prolong = 'Да' if self.auto_prolong else 'нет'
@@ -262,7 +263,7 @@ class VpnOrder(CreateTracker):
         if order is None:
             return 'have_no_orders'
         
-        price = AVAILABLE_GBs[gb_amount]
+        price = gb_amount * GB_PRICE
 
         if user.balance - price < 0:
             return 'Недостаточно средств'
