@@ -83,8 +83,9 @@ class ProxyOrder(CreateUpdateTracker):
         r = redis.from_url(REDIS_URL)
         key = f'{self.user.user_id}_proxy_keywords'
         proxy_keywords = self.get_keywords()
-        ads = {ads[v]: [f'{k}'] for k, v in kwarks.items()}  
-        proxy_keywords = {**proxy_keywords, **ads}
+        ads1 = {v: [f'{k}'] for k, v in kwarks.items()}
+        ads2 = {v: [f'{k}'] for k, v in proxy_keywords.items()}  
+        proxy_keywords = {**ads1, **ads2}
         r.set(key, value=json.dumps(proxy_keywords, ensure_ascii=False))
     
     @staticmethod
@@ -107,15 +108,14 @@ class ProxyOrder(CreateUpdateTracker):
             if u.balance - price >= 0:
                 version, ptype, period = _translate[version], _translate[ptype], int(period)
                 country = Message.encode_msg_name(country)
-                date_end = timedelta(days=period) + timezone.now()
-                # date_end_str = list(proxy_list['list'].values())[0]['date_end']
-                # date_end = datetime.strptime(date_end_str, "%Y-%m-%d %H:%M:%S")
+                date_end_str = list(proxy_list['list'].values())[0]['date_end']
+                date_end = datetime.strptime(date_end_str, "%Y-%m-%d %H:%M:%S")
+                proxy_list = proxy_connector.buy(
+                    count=count, period=period, country=country, version=version, type=ptype
+                )
                 order = ProxyOrder.objects.create(
                     user=u, date_end=date_end,
                     proxy_version=version, proxy_type=ptype, proxy_country=country, price=price
-                )
-                proxy_list = proxy_connector.buy(
-                    count=count, period=period, country=country, version=version, type=ptype
                 )
                 order.save()
                 for p in proxy_list['list'].values():

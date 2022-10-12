@@ -5,7 +5,6 @@ from telegram import Update
 from telegram.ext import CallbackContext
 from bot.models import User
 from vpn.models import VpnOrder, Peer
-from proxy.models import ProxyOrder
 from proxy.dispatcher import get_markup_countries
 from bot.handlers.utils import utils
 from payment.models import Payment
