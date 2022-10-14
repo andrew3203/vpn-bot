@@ -1,4 +1,3 @@
-from ast import keyword
 import json
 import redis
 from abridge_bot.settings import REDIS_URL, GB_PRICE
@@ -62,11 +61,11 @@ class VpnServer(models.Model):
             update = vpn_connector.get_peer(peer.public_key)
             new_bytes = update['receive_bytes'] + \
                 update['transmit_bytes']
-            peer.traffic += round(new_bytes / 1073741824, 6)
+            peer.traffic += new_bytes / 1073741824
             peer.save()
             server_traffic += new_bytes
 
-        self.traffic += round(server_traffic / 1073741824, 4)
+        self.traffic += server_traffic / 1073741824
         self.save()
 
     def save_peer_traffic(self, public_key):
@@ -192,7 +191,7 @@ class VpnOrder(CreateTracker):
     @property
     def traffic_least(self):
         traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
-        traffic = self.tariff.traffic_lim - traffic
+        traffic = self.tariff.traffic_lim - traffic + self.ad_traffic
         return  f'{traffic} Гб'
     
     def get_keywords(self):
