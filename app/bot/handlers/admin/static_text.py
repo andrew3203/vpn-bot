@@ -13,8 +13,16 @@ proxy_balance = """
 <a href='https://proxy6.net/en/user/balance'>Пополнить баланс</a>
 """
 balance_error = """
-<b>СРОЧНО ПОПОЛНИТЕ БАЛАНС!!</b>
+<b>СРОЧНО ПОПОЛНИТЕ БАЛАНС!! @andrew3203</b>
 Текущий баланс акаунта <b>{accautn_balance}</b>\n\n
 <b>Пользователь {user_id} не смог купить прокси на сумму {price}</b>
 <a href='https://proxy6.net/en/user/balance'>Пополнить баланс</a>
+"""
+buy_error = """
+<b>Не смогли купить прокси!! @andrew3203</b>
+Пользователь: user_id
+Баланс акаунта: accautn_balance
+
+Статус платежа: status
+Ошибка: error
 """

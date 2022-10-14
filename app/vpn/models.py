@@ -40,6 +40,7 @@ class VpnServer(models.Model):
 
     def __str__(self):
         ip = self.link.split('//')[-1]
+        ip = ip.split(':')[0]
         return f'{self.country}, {ip}'
 
     def create_peer(self):
@@ -57,23 +58,25 @@ class VpnServer(models.Model):
     def update_traffic(self):
         vpn_connector = VPNConnector(self.secret, self.link)
         server_traffic = 0
+        prev_traffic = 0
         for peer in Peer.objects.filter(server=self):
             update = vpn_connector.get_peer(peer.public_key)
             new_bytes = update['receive_bytes'] + \
                 update['transmit_bytes']
-            peer.traffic += new_bytes / 1073741824
+            prev_traffic +=  peer.traffic
+            peer.traffic == new_bytes / 1073741824
             peer.save()
             server_traffic += new_bytes
 
-        self.traffic += server_traffic / 1073741824
+        self.traffic += (server_traffic / 1073741824) - prev_traffic
         self.save()
 
     def save_peer_traffic(self, public_key):
         vpn_connector = VPNConnector(self.secret, self.link)
         update = vpn_connector.get_peer(public_key)
-        new_bytes = update.get('total_receive_bytes',0) + \
-            update.get('total_transmit_bytes',0)
-        self.traffic += round(new_bytes / 1073741824, 6)
+        new_bytes = update.get('receive_bytes',0) + \
+            update.get('transmit_bytes',0)
+        self.traffic == new_bytes / 1073741824
         self.save()
 
 
@@ -161,6 +164,7 @@ class VpnOrder(CreateTracker):
     peers = models.ManyToManyField(
         Peer,
         verbose_name='Подключения',
+        blank=True
     )
     auto_prolong = models.BooleanField(
         'Продлевать автоматически',
@@ -172,7 +176,7 @@ class VpnOrder(CreateTracker):
     )
     refounded = models.BooleanField(
         'Деньги возвращены',
-        default=True
+        default=False
     )
 
     class Meta:
@@ -257,7 +261,7 @@ class VpnOrder(CreateTracker):
             self.save()
             return 'traffic_0'
 
-        elif traffic_lim - traffic <= 0.5000:
+        elif traffic_lim - traffic <= 0.8000:
             return 'traffic_05'
 
         return None
@@ -309,19 +313,20 @@ class VpnOrder(CreateTracker):
             user.balance -= tariff.price; user.save()
             msg_text = 'Тариф изменен'
             return prev_order, msg_text
-        elif user.balance - tariff.price < 0:
+
+        if user.balance - tariff.price < 0:
             msg_text = 'Не хватает средств'
             return None, msg_text
 
         user.balance -= tariff.price; user.save()
         server = VpnServer.objects.filter(country=country).first()
-        peer = server.create_peer()
         order = VpnOrder.objects.create(user=user, tariff=tariff)
         order.save()
+        peer = server.create_peer()
         order.peers.add(peer)
         order.save()
         order.set_user_info()
-        msg_text = ''
+        msg_text = 'Приобрести тариф'
         return order, msg_text
 
     @staticmethod

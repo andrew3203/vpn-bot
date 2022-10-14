@@ -181,7 +181,7 @@ class User(CreateUpdateTracker):
         proxy_kw = json.loads(proxy_kw) if proxy_kw else {}
 
         vpn_kw = r.get(f'{user_id}_vpn_keywords')
-        vpn_kw = json.loads(vpn_kw) if vpn_kw else {}
+        vpn_kw = json.loads(vpn_kw) if vpn_kw else {'нет': ['tariff_name']}
 
         choices_kw = r.get(f'{user_id}_choices')
         choices_kw = json.loads(choices_kw) if choices_kw else {}
@@ -191,6 +191,15 @@ class User(CreateUpdateTracker):
         kw = [user_kw, proxy_kw, vpn_kw, choices_kw]
         for k in keywords.keys():
             keywords[k] = [d[k][0] for d in kw if d.get(k)]
+        
+        if len(proxy_kw) == 0:
+            keywords['нет'] = keywords.get('нет', []) + ['proxy_list', 'proxy_date_end', 'proxy_version', 
+                'proxy_type', 'proxy_country', 'proxy_auto_prolong'
+            ]
+        if len(vpn_kw) == 0:
+            keywords['нет'] = keywords.get('нет', []) + ['tariff_name', 'tariff_price', 'end_date', 
+                'traffic_least', 'vpn_auto_prolong', 'peers_count'
+            ]
         return keywords
     
     @staticmethod

@@ -46,13 +46,12 @@ def create_new_vpn_order(update: Update, context: CallbackContext) -> None:
         user_id=user_id,
         country=country, tariff_name=tariff_name
     )
-    qr_photo = order.peers.first().get_qr()
-    msg_text = update.callback_query.data
-
     update.callback_query.answer(msg_text)
     prev_state, next_state, prev_message_id = User.get_prev_next_states(user_id, msg_text)
-    photos = next_state.get("photos", [])
-    next_state['photos'] = [qr_photo] + photos
+    if order:
+        qr_photo = order.peers.first().get_qr()
+        photos = next_state.get("photos", [])
+        next_state['photos'] = [qr_photo] + photos
     _send_msg_and_log(user_id, msg_text, prev_state, next_state, prev_message_id, context)
 
 

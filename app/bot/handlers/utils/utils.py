@@ -160,9 +160,9 @@ def send_logs_message(msg_text, user_keywords, prev_state):
         text = get_message_text(text, user_keywords)
     except Exception as e:
         text = f'{msg_text}\n\n<b>first_name</b> (user_id)' 
-    _send_message(user_id=TELEGRAM_LOGS_CHAT_ID, text=text)
+    _send_message(user_id=TELEGRAM_LOGS_CHAT_ID, text=text, disable_web_page_preview=True)
 
 
 def admin_logs_message(msg_text, **kwargs):
     message_text = msg_text.format(**kwargs)
-    _send_message(user_id=TELEGRAM_LOGS_CHAT_ID, text=message_text)
+    _send_message(user_id=TELEGRAM_LOGS_CHAT_ID, text=message_text, disable_web_page_preview=True)

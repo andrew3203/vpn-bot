@@ -2,7 +2,6 @@ from django.db import models
 from bot.models import Message
 from utils.models import CreateUpdateTracker
 from datetime import datetime, timedelta
-from django.utils import timezone
 from django.db.models.signals import  post_save
 from django.dispatch import receiver
 import redis
@@ -14,7 +13,7 @@ from proxy.dispatcher import (
     ipv4_price, ipv6_price, ipv4_shared_price
 )
 from bot.handlers.utils.utils import admin_logs_message
-from bot.handlers.admin.static_text import proxy_balance, balance_error
+from bot.handlers.admin.static_text import proxy_balance, balance_error, buy_error
 from proxy.tasks import deactivate_order, run_auto_prolong_task
 
 from bot.models import User
@@ -63,6 +62,14 @@ class ProxyOrder(CreateUpdateTracker):
 
     def __str__(self):
         return f'{self.user} - {self.price}'
+    
+    @staticmethod
+    def get_kw_names_list():
+        r = [
+            'proxy_list', 'proxy_date_end', 'proxy_version',
+            'proxy_type', 'proxy_country', 'proxy_auto_prolong'
+        ]
+        return r
 
     def get_keywords(self) -> dict:
         keywords = {}
@@ -108,20 +115,27 @@ class ProxyOrder(CreateUpdateTracker):
             if u.balance - price >= 0:
                 version, ptype, period = _translate[version], _translate[ptype], int(period)
                 country = Message.encode_msg_name(country)
-                proxy_list = proxy_connector.buy(
+                resp = proxy_connector.buy(
                     count=count, period=period, country=country, version=version, type=ptype
                 )
-                date_end_str = list(proxy_list['list'].values())[0]['date_end']
+
+                if resp.get('list') and resp['status'] == 'yes':
+                    date_end_str = list(resp['list'].values())[0]['date_end']
+                else:
+                    admin_logs_message(
+                        buy_error, accautn_balance=accautn_balance, 
+                        user_id=user_id, status=resp['status'], error=resp.get('error', 'Нет')
+                    )
+                    return 'На акаунте нету денег'
                 date_end = datetime.strptime(date_end_str, "%Y-%m-%d %H:%M:%S")
                 order = ProxyOrder.objects.create(
                     user=u, date_end=date_end,
                     proxy_version=version, proxy_type=ptype, proxy_country=country, price=price
                 )
                 order.save()
-                for p in proxy_list['list'].values():
+                for p in resp['list'].values():
                     Proxy.objects.create(
-                        proxy_id=p['id'],
-                        proxy=f"{p['host']}:{p['port']}:{p['user']}:{p['pass']}",
+                        proxy_id=p['id'], proxy=f"{p['host']}:{p['port']}:{p['user']}:{p['pass']}",
                         order=order
                     ).save()
                 order.auto_prolong = auto_prolong
