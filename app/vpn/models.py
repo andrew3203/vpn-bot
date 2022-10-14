@@ -245,19 +245,21 @@ class VpnOrder(CreateTracker):
             self.active = False
             self.save()
             return 'order_cenceled'
-        elif end_date - now < timedelta(hours=2):
+        elif end_date < now + timedelta(hours=2):
             return 'comes_to_the_end'
 
 
         traffic = sum(list(self.peers.all().values_list('traffic', flat=True)))
         traffic_lim = self.tariff.traffic_lim + self.ad_traffic
-        if traffic_lim - traffic <= 0.1000:
-            return 'traffic_05'
-        elif traffic_lim - traffic < 0.0001:
+        
+        if traffic_lim - traffic < 0.0001:
             self.active = False
             self.ad_traffic = 0
             self.save()
             return 'traffic_0'
+
+        elif traffic_lim - traffic <= 0.5000:
+            return 'traffic_05'
 
         return None
 

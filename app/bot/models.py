@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ast import keyword
 from random import randint
 import cyrtranslit
 import emoji
@@ -186,7 +187,11 @@ class User(CreateUpdateTracker):
         choices_kw = json.loads(choices_kw) if choices_kw else {}
         choices_kw = {v: [f'{k}'] for k, v in choices_kw.items()}
 
-        return {**user_kw, **proxy_kw, **choices_kw, **vpn_kw}
+        keywords = {**user_kw, **proxy_kw, **choices_kw, **vpn_kw}
+        kw = [user_kw, proxy_kw, vpn_kw, choices_kw]
+        for k in keywords.keys():
+            keywords[k] += [d[k] for d in kw if d.get(k)]
+        return keywords
     
     @staticmethod
     def get_choices(user_id, *args):
