@@ -83,6 +83,7 @@ class ProxyOrder(CreateUpdateTracker):
         keywords['proxy_version'] = f'IPv{self.proxy_version}'
         keywords['proxy_type'] = self.proxy_type.upper()
         keywords['proxy_country'] = self.proxy_country.upper()
+        keywords['proxy_count'] = all_proxy.count()
         keywords['proxy_auto_prolong'] = 'Да' if self.auto_prolong else 'Нет'
         return keywords
 

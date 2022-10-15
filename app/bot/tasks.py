@@ -99,7 +99,7 @@ def send_delay_message(user_id, msg_name):
 def check_deep_link(user_id, deep_link):
     user_ids = list(models.User.objects.all().values_list('user_id', flat=True))
     msg_dict = dict(PROGREV_NAMES)
-    if deep_link not in user_ids:
+    if int(deep_link) not in user_ids:
         models.User.objects.filter(user_id=user_id).update(deep_link=None)
         send_delay_message.delay(user_id, msg_name=msg_dict['user_invalid_deep_link'])
         return False

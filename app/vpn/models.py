@@ -63,8 +63,8 @@ class VpnServer(models.Model):
             update = vpn_connector.get_peer(peer.public_key)
             new_bytes = update['receive_bytes'] + \
                 update['transmit_bytes']
-            prev_traffic +=  peer.traffic
-            peer.traffic == new_bytes / 1073741824
+            prev_traffic += peer.traffic
+            peer.traffic = new_bytes / 1073741824
             peer.save()
             server_traffic += new_bytes
 
@@ -76,7 +76,7 @@ class VpnServer(models.Model):
         update = vpn_connector.get_peer(public_key)
         new_bytes = update.get('receive_bytes',0) + \
             update.get('transmit_bytes',0)
-        self.traffic == new_bytes / 1073741824
+        self.traffic = new_bytes / 1073741824
         self.save()
 
 
@@ -276,20 +276,25 @@ class VpnOrder(CreateTracker):
         user = User.objects.get(user_id=user_id)
         order = VpnOrder.objects.filter(user=user).first()
         if order is None:
-            return 'have_no_orders'
+            return 'У вас нету заказов'
         
         price = gb_amount * GB_PRICE
 
         if user.balance - price < 0:
-            return 'Недостаточно средств'
+            return 'Не хватает средств'
 
         order.ad_traffic += gb_amount
         order.save()
-        user.balance -= price
-        user.save
+        user.balance -= price; user.save
         if order.active:
             return 'Покупка ГБ успешна'
         else:
+            order.active = True
+            server = VpnServer.objects.all().first()
+            peer = server.create_peer()
+            order.peers.add(peer)
+            order.save()
+            order.set_user_info()
             return 'Покупка ГБ успешна 1'
 
     @staticmethod
@@ -302,11 +307,11 @@ class VpnOrder(CreateTracker):
         if prev_order:
             if prev_order.tariff == tariff:
                 msg_text = 'У вас прежний тариф'
-                return prev_order, msg_text
+                return None, msg_text
             
             if user.balance - tariff.price < 0:
                 msg_text = 'Не хватает средств'
-                return prev_order, msg_text
+                return None, msg_text
 
             prev_order.tariff = tariff
             prev_order.save()
